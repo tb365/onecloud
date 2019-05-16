@@ -100,6 +100,10 @@ func InitHandlers(app *appsrv.Application) {
 		models.LoadbalancerCertificateManager,
 		models.LoadbalancerAclManager,
 		models.LoadbalancerAgentManager,
+		models.CachedLoadbalancerAclManager,
+		models.CachedLoadbalancerCertificateManager,
+		models.HuaweiCachedLbManager,
+		models.HuaweiCachedLbbgManager,
 		models.RouteTableManager,
 
 		models.SchedpolicyManager,

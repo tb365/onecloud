@@ -1176,6 +1176,7 @@ func (account *SCloudaccount) needSync() bool {
 func (manager *SCloudaccountManager) AutoSyncCloudaccountTask(ctx context.Context, userCred mcclient.TokenCredential, isStart bool) {
 	if isStart {
 		// mark all the records to be init
+
 		CloudproviderRegionManager.initAllRecords()
 	}
 
