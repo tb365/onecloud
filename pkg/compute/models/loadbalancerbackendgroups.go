@@ -60,6 +60,14 @@ type SLoadbalancerBackendGroup struct {
 
 	Type           string `width:"36" charset:"ascii" nullable:"false" list:"user" default:"normal" create:"optional"`
 	LoadbalancerId string `width:"36" charset:"ascii" nullable:"false" list:"user" create:"optional"`
+
+	// 目前只有华为云用到。
+	ProtocolType string `width:"16" charset:"ascii" nullable:"true" list:"user" create:"optional"`
+	Scheduler    string `width:"16" charset:"ascii" nullable:"false" list:"user" create:"optional" update:"user"`
+	SLoadbalancerTCPListener
+	SLoadbalancerUDPListener
+	SLoadbalancerHTTPListener
+	SLoadbalancerHealthCheck
 }
 
 func (man *SLoadbalancerBackendGroupManager) pendingDeleteSubs(ctx context.Context, userCred mcclient.TokenCredential, q *sqlchemy.SQuery) {
@@ -363,6 +371,15 @@ func (lbbg *SLoadbalancerBackendGroup) StartLoadBalancerBackendGroupCreateTask(c
 	return nil
 }
 
+func (lbbg *SLoadbalancerBackendGroup) StartHuaweiLoadBalancerBackendGroupCreateTask(ctx context.Context, userCred mcclient.TokenCredential, params *jsonutils.JSONDict, parentTaskId string) error {
+	task, err := taskman.TaskManager.NewTask(ctx, "HuaweiLoadbalancerLoadbalancerBackendGroupCreateTask", lbbg, userCred, params, parentTaskId, "", nil)
+	if err != nil {
+		return err
+	}
+	task.ScheduleRun(nil)
+	return nil
+}
+
 func (lbbg *SLoadbalancerBackendGroup) LBPendingDelete(ctx context.Context, userCred mcclient.TokenCredential) {
 	lbbg.pendingDeleteSubs(ctx, userCred)
 	lbbg.DoPendingDelete(ctx, userCred)
@@ -405,6 +422,135 @@ func (lbbg *SLoadbalancerBackendGroup) StartLoadBalancerBackendGroupDeleteTask(c
 
 func (lbbg *SLoadbalancerBackendGroup) Delete(ctx context.Context, userCred mcclient.TokenCredential) error {
 	return nil
+}
+
+func (lbbg *SLoadbalancerBackendGroup) GetListener() *SLoadbalancerListener {
+	ret := &SLoadbalancerListener{}
+	err := LoadbalancerListenerManager.Query().Equals("backend_group_id", lbbg.Id).First(ret)
+	if err != nil {
+		return nil
+	}
+
+	return ret
+}
+
+func (lbbg *SLoadbalancerBackendGroup) GetBackendGroupParams() (cloudprovider.SLoadbalancerBackendGroup, error) {
+	var stickySession *cloudprovider.SLoadbalancerStickySession
+	if lbbg.StickySession == api.LB_BOOL_ON {
+		stickySession = &cloudprovider.SLoadbalancerStickySession{
+			StickySession:              lbbg.StickySession,
+			StickySessionCookie:        lbbg.StickySessionCookie,
+			StickySessionType:          lbbg.StickySessionType,
+			StickySessionCookieTimeout: lbbg.StickySessionCookieTimeout,
+		}
+	}
+
+	var healthCheck *cloudprovider.SLoadbalancerHealthCheck
+	if lbbg.HealthCheck == api.LB_BOOL_ON {
+		healthCheck = &cloudprovider.SLoadbalancerHealthCheck{
+			HealthCheckType:     lbbg.HealthCheckType,
+			HealthCheckReq:      lbbg.HealthCheckReq,
+			HealthCheckExp:      lbbg.HealthCheckExp,
+			HealthCheck:         lbbg.HealthCheck,
+			HealthCheckTimeout:  lbbg.HealthCheckTimeout,
+			HealthCheckDomain:   lbbg.HealthCheckDomain,
+			HealthCheckHttpCode: lbbg.HealthCheckHttpCode,
+			HealthCheckURI:      lbbg.HealthCheckURI,
+			HealthCheckInterval: lbbg.HealthCheckInterval,
+			HealthCheckRise:     lbbg.HealthCheckRise,
+			HealthCheckFail:     lbbg.HealthCheckFall,
+		}
+	}
+
+	backends, err := lbbg.GetBackendsParams()
+	if err != nil {
+		return cloudprovider.SLoadbalancerBackendGroup{}, err
+	}
+
+	listener := lbbg.GetListener()
+	listenerId := ""
+	if listener != nil {
+		listenerId = listener.ExternalId
+	}
+
+	loadbalancer := lbbg.GetLoadbalancer()
+	loadbalancerId := ""
+	if loadbalancer != nil {
+		loadbalancerId = loadbalancer.ExternalId
+	}
+
+	ret := cloudprovider.SLoadbalancerBackendGroup{
+		Name:           lbbg.Name,
+		GroupType:      lbbg.Type,
+		Backends:       backends,
+		LoadbalancerID: loadbalancerId,
+		ListenerID:     listenerId,
+		ListenType:     lbbg.ProtocolType,
+		Scheduler:      lbbg.Scheduler,
+		StickySession:  stickySession,
+		HealthCheck:    healthCheck,
+	}
+
+	return ret, nil
+}
+
+func (lbbg *SLoadbalancerBackendGroup) GetBackendsParams() ([]cloudprovider.SLoadbalancerBackend, error) {
+	backends, err := lbbg.GetBackends()
+	if err != nil {
+		return nil, err
+	}
+
+	ret := make([]cloudprovider.SLoadbalancerBackend, len(backends))
+	for i := range backends {
+		b := backends[i]
+
+		externalId := ""
+		guest := b.GetGuest()
+		if guest != nil {
+			externalId = guest.GetExternalId()
+		}
+
+		ret[i] = cloudprovider.SLoadbalancerBackend{
+			Weight:      b.Weight,
+			Port:        b.Port,
+			ID:          b.Id,
+			Name:        b.Name,
+			ExternalID:  externalId,
+			BackendType: b.BackendType,
+			BackendRole: b.BackendRole,
+			Address:     b.Address,
+		}
+	}
+
+	return ret, nil
+}
+
+func (lbbg *SLoadbalancerBackendGroup) GetICloudLoadbalancerBackendGroup() (cloudprovider.ICloudLoadbalancerBackendGroup, error) {
+	if len(lbbg.ExternalId) == 0 {
+		return nil, fmt.Errorf("backendgroup %s has no external id", lbbg.GetId())
+	}
+
+	lb := lbbg.GetLoadbalancer()
+	if lb == nil {
+		return nil, fmt.Errorf("backendgroup %s releated loadbalancer not found", lbbg.GetId())
+	}
+
+	iregion, err := lb.GetIRegion()
+	if err != nil {
+		return nil, err
+	}
+
+	ilb, err := iregion.GetILoadBalancerById(lb.GetExternalId())
+	if err != nil {
+		return nil, err
+	}
+
+	ilbbg, err := ilb.GetILoadBalancerBackendGroupById(lbbg.ExternalId)
+	if err != nil {
+		return nil, err
+	}
+
+	return ilbbg, nil
 }
 
 func (man *SLoadbalancerBackendGroupManager) getLoadbalancerBackendgroupsByLoadbalancer(lb *SLoadbalancer) ([]SLoadbalancerBackendGroup, error) {
@@ -504,6 +650,48 @@ func (lbbg *SLoadbalancerBackendGroup) SyncWithCloudLoadbalancerBackendgroup(ctx
 	diff, err := db.UpdateWithLock(ctx, lbbg, func() error {
 		lbbg.Type = extLoadbalancerBackendgroup.GetType()
 		lbbg.Status = extLoadbalancerBackendgroup.GetStatus()
+
+		// huawei
+		lbbg.ProtocolType = extLoadbalancerBackendgroup.GetProtocolType()
+		lbbg.Scheduler = extLoadbalancerBackendgroup.GetScheduler()
+		healthCheck, err := extLoadbalancerBackendgroup.GetHealthCheck()
+		if err != nil {
+			return err
+		}
+
+		if healthCheck != nil {
+			lbbg.HealthCheckType = healthCheck.HealthCheckType
+			lbbg.HealthCheckTimeout = healthCheck.HealthCheckTimeout
+			lbbg.HealthCheckDomain = healthCheck.HealthCheckDomain
+			lbbg.HealthCheckURI = healthCheck.HealthCheckURI
+			lbbg.HealthCheckInterval = healthCheck.HealthCheckInterval
+			lbbg.HealthCheckRise = healthCheck.HealthCheckRise
+		} else {
+			lbbg.HealthCheckType = ""
+			lbbg.HealthCheckTimeout = 0
+			lbbg.HealthCheckDomain = ""
+			lbbg.HealthCheckURI = ""
+			lbbg.HealthCheckInterval = 0
+			lbbg.HealthCheckRise = 0
+		}
+
+		stickySession, err := extLoadbalancerBackendgroup.GetStickySession()
+		if err != nil {
+			return err
+		}
+
+		if stickySession != nil {
+			lbbg.StickySessionCookieTimeout = stickySession.StickySessionCookieTimeout
+			lbbg.StickySessionType = stickySession.StickySessionType
+			lbbg.StickySession = stickySession.StickySession
+			lbbg.StickySessionCookie = stickySession.StickySessionCookie
+		} else {
+			lbbg.StickySessionCookieTimeout = 0
+			lbbg.StickySessionType = ""
+			lbbg.StickySession = ""
+			lbbg.StickySessionCookie = ""
+		}
+
 		return nil
 	})
 	if err != nil {
@@ -552,6 +740,37 @@ func (man *SLoadbalancerBackendGroupManager) newFromCloudLoadbalancerBackendgrou
 
 	lbbg.Type = extLoadbalancerBackendgroup.GetType()
 	lbbg.Status = extLoadbalancerBackendgroup.GetStatus()
+
+	// huawei
+	lbbg.ProtocolType = extLoadbalancerBackendgroup.GetProtocolType()
+	lbbg.Scheduler = extLoadbalancerBackendgroup.GetScheduler()
+	// todo: binding listener id
+
+	healthCheck, err := extLoadbalancerBackendgroup.GetHealthCheck()
+	if err != nil {
+		return nil, err
+	}
+
+	if healthCheck != nil {
+		lbbg.HealthCheckType = healthCheck.HealthCheckType
+		lbbg.HealthCheckTimeout = healthCheck.HealthCheckTimeout
+		lbbg.HealthCheckDomain = healthCheck.HealthCheckDomain
+		lbbg.HealthCheckURI = healthCheck.HealthCheckURI
+		lbbg.HealthCheckInterval = healthCheck.HealthCheckInterval
+		lbbg.HealthCheckRise = healthCheck.HealthCheckRise
+	}
+
+	stickySession, err := extLoadbalancerBackendgroup.GetStickySession()
+	if err != nil {
+		return nil, err
+	}
+
+	if stickySession != nil {
+		lbbg.StickySessionCookieTimeout = stickySession.StickySessionCookieTimeout
+		lbbg.StickySessionType = stickySession.StickySessionType
+		lbbg.StickySession = stickySession.StickySession
+		lbbg.StickySessionCookie = stickySession.StickySessionCookie
+	}
 
 	err = man.TableSpec().Insert(lbbg)
 	if err != nil {

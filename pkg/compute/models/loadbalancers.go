@@ -190,10 +190,14 @@ func (man *SLoadbalancerManager) ValidateCreateData(ctx context.Context, userCre
 		}
 		zone := wire.GetZone()
 		if zone == nil {
-			return nil, fmt.Errorf("getting zone failed")
+			if provider := managerIdV.Model.(*SCloudprovider); provider.Provider != api.CLOUD_PROVIDER_HUAWEI {
+				return nil, fmt.Errorf("getting zone failed")
+			}
+		} else {
+			data.Set("zone_id", jsonutils.NewString(zone.GetId()))
 		}
-		data.Set("zone_id", jsonutils.NewString(zone.GetId()))
-		region = zone.GetRegion()
+
+		region = wire.getRegion()
 		if region == nil {
 			return nil, fmt.Errorf("getting region failed")
 		}

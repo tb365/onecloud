@@ -396,14 +396,25 @@ func (lbb *SLoadbalancerBackend) constructFieldsFromCloudLoadbalancerBackend(ext
 	lbb.Port = extLoadbalancerBackend.GetPort()
 
 	lbb.BackendType = extLoadbalancerBackend.GetBackendType()
-	lbb.BackendId = extLoadbalancerBackend.GetBackendId()
 	lbb.BackendRole = extLoadbalancerBackend.GetBackendRole()
 
-	instance, err := GuestManager.FetchByExternalId(lbb.BackendId)
-	if err != nil {
-		return err
+	var guest *SGuest
+	// 华为Backend目前没有返回服务器ID，直接查询代价太高需要遍历整个region的服务器。因此这里不再回写BackendId。
+	if lbb.GetProviderName() != api.CLOUD_PROVIDER_HUAWEI {
+		instance, err := GuestManager.FetchByExternalId(extLoadbalancerBackend.GetBackendId())
+		if err != nil {
+			return err
+		}
+		guest = instance.(*SGuest)
+	} else {
+		instance, err := GuestManager.FetchById(lbb.BackendId)
+		if err != nil {
+			return err
+		}
+
+		guest = instance.(*SGuest)
 	}
-	guest := instance.(*SGuest)
+
 	lbb.BackendId = guest.Id
 	address, err := LoadbalancerBackendManager.GetGuestAddress(guest)
 	if err != nil {
