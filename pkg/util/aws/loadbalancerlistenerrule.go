@@ -5,8 +5,23 @@ import (
 )
 
 type SElbListenerRule struct {
-
+	Priority   string      `json:"Priority"`
+	IsDefault  bool        `json:"IsDefault"`
+	Actions    []Action    `json:"Actions"`
+	RuleArn    string      `json:"RuleArn"`
+	Conditions []Condition `json:"Conditions"`
 }
+
+type Action struct {
+	TargetGroupArn string `json:"TargetGroupArn"`
+	Type           string `json:"Type"`
+}
+
+type Condition struct {
+	Field  string   `json:"Field"`
+	Values []string `json:"Values"`
+}
+
 
 func (self *SElbListenerRule) GetId() string {
 	panic("implement me")

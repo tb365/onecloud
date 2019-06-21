@@ -6,7 +6,8 @@ import (
 )
 
 type SElbCertificate struct {
-
+	CertificateArn string `json:"CertificateArn"`
+	IsDefault      bool   `json:"IsDefault"`
 }
 
 func (self *SElbCertificate) GetId() string {

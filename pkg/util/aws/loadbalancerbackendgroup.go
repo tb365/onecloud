@@ -6,7 +6,25 @@ import (
 )
 
 type SElbBackendGroup struct {
+	TargetGroupName            string   `json:"TargetGroupName"`
+	Protocol                   string   `json:"Protocol"`
+	Port                       int64    `json:"Port"`
+	VpcID                      string   `json:"VpcId"`
+	TargetType                 string   `json:"TargetType"`
+	HealthyThresholdCount      int64    `json:"HealthyThresholdCount"`
+	Matcher                    Matcher  `json:"Matcher"`
+	UnhealthyThresholdCount    int64    `json:"UnhealthyThresholdCount"`
+	HealthCheckPath            string   `json:"HealthCheckPath"`
+	HealthCheckProtocol        string   `json:"HealthCheckProtocol"`
+	HealthCheckPort            string   `json:"HealthCheckPort"`
+	HealthCheckIntervalSeconds int64    `json:"HealthCheckIntervalSeconds"`
+	HealthCheckTimeoutSeconds  int64    `json:"HealthCheckTimeoutSeconds"`
+	TargetGroupArn             string   `json:"TargetGroupArn"`
+	LoadBalancerArns           []string `json:"LoadBalancerArns"`
+}
 
+type Matcher struct {
+	HTTPCode string `json:"HttpCode"`
 }
 
 func (self *SElbBackendGroup) GetId() string {

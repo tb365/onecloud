@@ -6,7 +6,22 @@ import (
 )
 
 type SElbListener struct {
+	Port            int64           `json:"Port"`
+	Protocol        string          `json:"Protocol"`
+	DefaultActions  []DefaultAction `json:"DefaultActions"`
+	SSLPolicy       string          `json:"SslPolicy"`
+	Certificates    []Certificate   `json:"Certificates"`
+	LoadBalancerArn string          `json:"LoadBalancerArn"`
+	ListenerArn     string          `json:"ListenerArn"`
+}
 
+type Certificate struct {
+	CertificateArn string `json:"CertificateArn"`
+}
+
+type DefaultAction struct {
+	TargetGroupArn string `json:"TargetGroupArn"`
+	Type           string `json:"Type"`
 }
 
 func (self *SElbListener) GetId() string {
