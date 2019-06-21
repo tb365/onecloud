@@ -10,7 +10,33 @@ https://docs.aws.amazon.com/elasticloadbalancing/latest/APIReference/Welcome.htm
 */
 
 type SElb struct {
+	Type                  string             `json:"Type"`
+	Scheme                string             `json:"Scheme"`
+	IPAddressType         string             `json:"IpAddressType"`
+	VpcID                 string             `json:"VpcId"`
+	AvailabilityZones     []AvailabilityZone `json:"AvailabilityZones"`
+	CreatedTime           string             `json:"CreatedTime"`
+	CanonicalHostedZoneID string             `json:"CanonicalHostedZoneId"`
+	DNSName               string             `json:"DNSName"`
+	SecurityGroups        []string           `json:"SecurityGroups"`
+	LoadBalancerName      string             `json:"LoadBalancerName"`
+	State                 State              `json:"State"`
+	LoadBalancerArn       string             `json:"LoadBalancerArn"`
+}
 
+type AvailabilityZone struct {
+	LoadBalancerAddresses []LoadBalancerAddress `json:"LoadBalancerAddresses"`
+	ZoneName              string                `json:"ZoneName"`
+	SubnetID              string                `json:"SubnetId"`
+}
+
+type LoadBalancerAddress struct {
+	IPAddress    string `json:"IpAddress"`
+	AllocationID string `json:"AllocationId"`
+}
+
+type State struct {
+	Code string `json:"Code"`
 }
 
 func (self *SElb) GetId() string {
