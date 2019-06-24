@@ -2,6 +2,8 @@ package aws
 
 import (
 	"yunion.io/x/jsonutils"
+
+	api "yunion.io/x/onecloud/pkg/apis/compute"
 	"yunion.io/x/onecloud/pkg/cloudprovider"
 )
 
@@ -25,19 +27,19 @@ type DefaultAction struct {
 }
 
 func (self *SElbListener) GetId() string {
-	panic("implement me")
+	return self.ListenerArn
 }
 
 func (self *SElbListener) GetName() string {
-	panic("implement me")
+	return self.ListenerArn
 }
 
 func (self *SElbListener) GetGlobalId() string {
-	panic("implement me")
+	return self.GetId()
 }
 
 func (self *SElbListener) GetStatus() string {
-	panic("implement me")
+	return api.LB_STATUS_ENABLED
 }
 
 func (self *SElbListener) Refresh() error {
@@ -45,19 +47,19 @@ func (self *SElbListener) Refresh() error {
 }
 
 func (self *SElbListener) IsEmulated() bool {
-	panic("implement me")
+	return false
 }
 
 func (self *SElbListener) GetMetadata() *jsonutils.JSONDict {
-	panic("implement me")
+	return jsonutils.NewDict()
 }
 
 func (self *SElbListener) GetProjectId() string {
-	panic("implement me")
+	return ""
 }
 
 func (self *SElbListener) GetListenerType() string {
-	panic("implement me")
+	return ""
 }
 
 func (self *SElbListener) GetListenerPort() int {

@@ -2,6 +2,8 @@ package aws
 
 import (
 	"yunion.io/x/jsonutils"
+
+	api "yunion.io/x/onecloud/pkg/apis/compute"
 	"yunion.io/x/onecloud/pkg/cloudprovider"
 )
 
@@ -28,19 +30,19 @@ type Matcher struct {
 }
 
 func (self *SElbBackendGroup) GetId() string {
-	panic("implement me")
+	return self.TargetGroupArn
 }
 
 func (self *SElbBackendGroup) GetName() string {
-	panic("implement me")
+	return self.TargetGroupName
 }
 
 func (self *SElbBackendGroup) GetGlobalId() string {
-	panic("implement me")
+	return self.GetId()
 }
 
 func (self *SElbBackendGroup) GetStatus() string {
-	panic("implement me")
+	return api.LB_STATUS_ENABLED
 }
 
 func (self *SElbBackendGroup) Refresh() error {
@@ -48,23 +50,23 @@ func (self *SElbBackendGroup) Refresh() error {
 }
 
 func (self *SElbBackendGroup) IsEmulated() bool {
-	panic("implement me")
+	return false
 }
 
 func (self *SElbBackendGroup) GetMetadata() *jsonutils.JSONDict {
-	panic("implement me")
+	return jsonutils.NewDict()
 }
 
 func (self *SElbBackendGroup) GetProjectId() string {
-	panic("implement me")
+	return ""
 }
 
 func (self *SElbBackendGroup) IsDefault() bool {
-	panic("implement me")
+	return false
 }
 
 func (self *SElbBackendGroup) GetType() string {
-	panic("implement me")
+	return api.LB_BACKENDGROUP_TYPE_NORMAL
 }
 
 func (self *SElbBackendGroup) GetILoadbalancerBackends() ([]cloudprovider.ICloudLoadbalancerBackend, error) {
@@ -76,11 +78,20 @@ func (self *SElbBackendGroup) GetILoadbalancerBackendById(backendId string) (clo
 }
 
 func (self *SElbBackendGroup) GetProtocolType() string {
-	panic("implement me")
+	switch self.Protocol {
+	case "TCP":
+		return api.LB_LISTENER_TYPE_TCP
+	case "UDP":
+		return api.LB_LISTENER_TYPE_UDP
+	case "HTTP":
+		return api.LB_LISTENER_TYPE_HTTP
+	default:
+		return ""
+	}
 }
 
 func (self *SElbBackendGroup) GetScheduler() string {
-	panic("implement me")
+	return ""
 }
 
 func (self *SElbBackendGroup) GetHealthCheck() (*cloudprovider.SLoadbalancerHealthCheck, error) {
