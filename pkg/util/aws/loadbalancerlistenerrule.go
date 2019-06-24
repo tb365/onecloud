@@ -1,6 +1,8 @@
 package aws
 
 import (
+	"strings"
+
 	"yunion.io/x/jsonutils"
 	api "yunion.io/x/onecloud/pkg/apis/compute"
 )
@@ -49,23 +51,35 @@ func (self *SElbListenerRule) IsEmulated() bool {
 }
 
 func (self *SElbListenerRule) GetMetadata() *jsonutils.JSONDict {
-	panic("implement me")
+	return jsonutils.NewDict()
 }
 
 func (self *SElbListenerRule) GetProjectId() string {
-	panic("implement me")
+	return ""
 }
 
 func (self *SElbListenerRule) GetDomain() string {
-	panic("implement me")
+	for _, condition := range self.Conditions {
+		if condition.Field == "host-header" {
+			return strings.Join(condition.Values, ",")
+		}
+	}
+
+	return ""
 }
 
 func (self *SElbListenerRule) GetPath() string {
-	panic("implement me")
+	for _, condition := range self.Conditions {
+		if condition.Field == "path-pattern" {
+			return strings.Join(condition.Values, ",")
+		}
+	}
+
+	return ""
 }
 
 func (self *SElbListenerRule) GetBackendGroupId() string {
-	panic("implement me")
+	return ""
 }
 
 func (self *SElbListenerRule) Delete() error {
