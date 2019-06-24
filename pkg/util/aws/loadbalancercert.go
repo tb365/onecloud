@@ -6,16 +6,18 @@ import (
 )
 
 type SElbCertificate struct {
+	region *SRegion
+
 	CertificateArn string `json:"CertificateArn"`
 	IsDefault      bool   `json:"IsDefault"`
 }
 
 func (self *SElbCertificate) GetId() string {
-	panic("implement me")
+	return self.CertificateArn
 }
 
 func (self *SElbCertificate) GetName() string {
-	panic("implement me")
+	return ""
 }
 
 func (self *SElbCertificate) GetGlobalId() string {
