@@ -1,6 +1,8 @@
 package aws
 
 import (
+	"strings"
+
 	"yunion.io/x/jsonutils"
 
 	api "yunion.io/x/onecloud/pkg/apis/compute"
@@ -59,7 +61,20 @@ func (self *SElbListener) GetProjectId() string {
 }
 
 func (self *SElbListener) GetListenerType() string {
-	return ""
+	switch self.Protocol {
+	case "TCP":
+		return api.LB_LISTENER_TYPE_TCP
+	case "UDP":
+		return api.LB_LISTENER_TYPE_UDP
+	case "HTTP":
+		return api.LB_LISTENER_TYPE_HTTP
+	case "HTTPS":
+		return api.LB_LISTENER_TYPE_HTTPS
+	case "TCP_SSL":
+		return api.LB_LISTENER_TYPE_TCP
+	default:
+		return ""
+	}
 }
 
 func (self *SElbListener) GetListenerPort() int {
@@ -71,23 +86,24 @@ func (self *SElbListener) GetScheduler() string {
 }
 
 func (self *SElbListener) GetAclStatus() string {
-	return ""
+	return api.LB_BOOL_OFF
 }
 
 func (self *SElbListener) GetAclType() string {
-	panic("implement me")
+	return ""
 }
 
 func (self *SElbListener) GetAclId() string {
-	panic("implement me")
+	return ""
 }
 
 func (self *SElbListener) GetEgressMbps() int {
-	panic("implement me")
+	return 0
 }
 
 func (self *SElbListener) GetHealthCheck() string {
-	panic("implement me")
+	// todo: implment me
+	return ""
 }
 
 func (self *SElbListener) GetHealthCheckType() string {
@@ -135,6 +151,7 @@ func (self *SElbListener) GetHealthCheckURI() string {
 }
 
 func (self *SElbListener) GetHealthCheckCode() string {
+	strings.ReplaceAll()
 	panic("implement me")
 }
 
@@ -163,19 +180,24 @@ func (self *SElbListener) GetStickySessionCookie() string {
 }
 
 func (self *SElbListener) GetStickySessionCookieTimeout() int {
-	panic("implement me")
+	// todo: 需要从loadblancer attributes 中获取
+	return 0
 }
 
 func (self *SElbListener) XForwardedForEnabled() bool {
-	panic("implement me")
+	return false
 }
 
 func (self *SElbListener) GzipEnabled() bool {
-	panic("implement me")
+	return false
 }
 
 func (self *SElbListener) GetCertificateId() string {
-	panic("implement me")
+	if len(self.Certificates) > 0 {
+		return self.Certificates[0].CertificateArn
+	}
+
+	return ""
 }
 
 func (self *SElbListener) GetTLSCipherPolicy() string {
@@ -183,15 +205,15 @@ func (self *SElbListener) GetTLSCipherPolicy() string {
 }
 
 func (self *SElbListener) HTTP2Enabled() bool {
-	panic("implement me")
+	return false
 }
 
 func (self *SElbListener) Start() error {
-	panic("implement me")
+	return nil
 }
 
 func (self *SElbListener) Stop() error {
-	panic("implement me")
+	return cloudprovider.ErrNotSupported
 }
 
 func (self *SElbListener) Sync(listener *cloudprovider.SLoadbalancerListener) error {
