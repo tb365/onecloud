@@ -8,7 +8,7 @@ import (
 )
 
 type SElbListener struct {
-	Port            int64           `json:"Port"`
+	Port            int             `json:"Port"`
 	Protocol        string          `json:"Protocol"`
 	DefaultActions  []DefaultAction `json:"DefaultActions"`
 	SSLPolicy       string          `json:"SslPolicy"`
@@ -63,15 +63,15 @@ func (self *SElbListener) GetListenerType() string {
 }
 
 func (self *SElbListener) GetListenerPort() int {
-	panic("implement me")
+	return self.Port
 }
 
 func (self *SElbListener) GetScheduler() string {
-	panic("implement me")
+	return ""
 }
 
 func (self *SElbListener) GetAclStatus() string {
-	panic("implement me")
+	return ""
 }
 
 func (self *SElbListener) GetAclType() string {
