@@ -79,6 +79,12 @@ func (self *SElbListenerRule) GetPath() string {
 }
 
 func (self *SElbListenerRule) GetBackendGroupId() string {
+	for _, action := range self.Actions {
+		if action.Type == "forward" {
+			return action.TargetGroupArn
+		}
+	}
+
 	return ""
 }
 
