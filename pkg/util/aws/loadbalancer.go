@@ -2,6 +2,8 @@ package aws
 
 import (
 	"yunion.io/x/jsonutils"
+
+	api "yunion.io/x/onecloud/pkg/apis/compute"
 	"yunion.io/x/onecloud/pkg/cloudprovider"
 )
 
@@ -40,19 +42,28 @@ type State struct {
 }
 
 func (self *SElb) GetId() string {
-	panic("implement me")
+	return self.LoadBalancerArn
 }
 
 func (self *SElb) GetName() string {
-	panic("implement me")
+	return self.LoadBalancerName
 }
 
 func (self *SElb) GetGlobalId() string {
-	panic("implement me")
+	return self.GetId()
 }
 
 func (self *SElb) GetStatus() string {
-	panic("implement me")
+	switch self.State.Code {
+	case "provisioning":
+		return api.LB_STATUS_INIT
+	case "active":
+		return api.LB_STATUS_ENABLED
+	case "failed":
+		return api.LB_STATUS_START_FAILED
+	default:
+		return api.LB_STATUS_UNKNOWN
+	}
 }
 
 func (self *SElb) Refresh() error {
@@ -60,51 +71,61 @@ func (self *SElb) Refresh() error {
 }
 
 func (self *SElb) IsEmulated() bool {
-	panic("implement me")
+	return false
 }
 
 func (self *SElb) GetMetadata() *jsonutils.JSONDict {
-	panic("implement me")
+	return jsonutils.NewDict()
 }
 
 func (self *SElb) GetProjectId() string {
-	panic("implement me")
+	return ""
 }
 
 func (self *SElb) GetAddress() string {
-	panic("implement me")
+	// todo: dns?
+	return self.DNSName
 }
 
 func (self *SElb) GetAddressType() string {
-	panic("implement me")
+	switch self.Scheme {
+	case "internal":
+		return api.LB_ADDR_TYPE_INTRANET
+	case "internet-facing":
+		return api.LB_ADDR_TYPE_INTERNET
+	default:
+		return api.LB_ADDR_TYPE_INTRANET
+	}
 }
 
 func (self *SElb) GetNetworkType() string {
-	panic("implement me")
+	return api.LB_NETWORK_TYPE_VPC
 }
 
+// todo: 过个network id怎么兼容？
 func (self *SElb) GetNetworkId() string {
-	panic("implement me")
+	return self.AvailabilityZones[0].SubnetID
 }
 
 func (self *SElb) GetVpcId() string {
-	panic("implement me")
+	return self.VpcID
 }
 
+// todo: 过个network id怎么兼容？
 func (self *SElb) GetZoneId() string {
-	panic("implement me")
+	return self.AvailabilityZones[0].ZoneName
 }
 
 func (self *SElb) GetLoadbalancerSpec() string {
-	panic("implement me")
+	return ""
 }
 
 func (self *SElb) GetChargeType() string {
-	panic("implement me")
+	return api.LB_CHARGE_TYPE_BY_HOUR
 }
 
 func (self *SElb) GetEgressMbps() int {
-	panic("implement me")
+	return 0
 }
 
 func (self *SElb) Delete() error {
