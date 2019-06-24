@@ -2,6 +2,7 @@ package aws
 
 import (
 	"yunion.io/x/jsonutils"
+	api "yunion.io/x/onecloud/pkg/apis/compute"
 )
 
 type SElbListenerRule struct {
@@ -24,19 +25,19 @@ type Condition struct {
 
 
 func (self *SElbListenerRule) GetId() string {
-	panic("implement me")
+	return self.RuleArn
 }
 
 func (self *SElbListenerRule) GetName() string {
-	panic("implement me")
+	return self.RuleArn
 }
 
 func (self *SElbListenerRule) GetGlobalId() string {
-	panic("implement me")
+	return self.GetId()
 }
 
 func (self *SElbListenerRule) GetStatus() string {
-	panic("implement me")
+	return api.LB_STATUS_ENABLED
 }
 
 func (self *SElbListenerRule) Refresh() error {
