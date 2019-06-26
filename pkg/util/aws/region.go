@@ -62,7 +62,7 @@ type SRegion struct {
 	ec2Client *ec2.EC2
 	iamClient *iam.IAM
 	s3Client  *s3.S3
-	// elbv2Client *elbv2
+	elbv2Client *elbv2.ELBV2
 
 	izones []cloudprovider.ICloudZone
 	ivpcs  []cloudprovider.ICloudVpc
@@ -130,6 +130,19 @@ func (self *SRegion) GetS3Client() (*s3.S3, error) {
 	return self.s3Client, nil
 }
 
+func (self *SRegion) GetElbV2Client() (*elbv2.ELBV2, error) {
+	if self.elbv2Client == nil {
+		s, err := self.getAwsSession()
+
+		if err != nil {
+			return nil, err
+		}
+
+		self.elbv2Client = elbv2.New(s)
+	}
+
+	return self.elbv2Client, nil
+}
 /////////////////////////////////////////////////////////////////////////////
 func (self *SRegion) fetchZones() error {
 	// todo: 这里将过滤出指定region下全部的zones。是否只过滤出可用的zone即可？ The state of the Availability Zone (available | information | impaired | unavailable)
