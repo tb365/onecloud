@@ -23,6 +23,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/iam"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/elbv2"
 
 	"yunion.io/x/jsonutils"
 	"yunion.io/x/log"
@@ -61,6 +62,7 @@ type SRegion struct {
 	ec2Client *ec2.EC2
 	iamClient *iam.IAM
 	s3Client  *s3.S3
+	// elbv2Client *elbv2
 
 	izones []cloudprovider.ICloudZone
 	ivpcs  []cloudprovider.ICloudVpc

@@ -224,3 +224,6 @@ func (self *SElbListener) Delete() error {
 	panic("implement me")
 }
 
+func (self *SRegion) GetElbListeners(elbId string) ([]SElbListener, error) {
+	return nil, nil
+}
