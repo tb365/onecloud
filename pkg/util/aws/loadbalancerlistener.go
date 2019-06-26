@@ -1,8 +1,7 @@
 package aws
 
 import (
-	"strings"
-
+	"github.com/aws/aws-sdk-go/service/elbv2"
 	"yunion.io/x/jsonutils"
 
 	api "yunion.io/x/onecloud/pkg/apis/compute"
@@ -10,6 +9,8 @@ import (
 )
 
 type SElbListener struct {
+	region *SRegion
+
 	Port            int             `json:"Port"`
 	Protocol        string          `json:"Protocol"`
 	DefaultActions  []DefaultAction `json:"DefaultActions"`
@@ -151,7 +152,6 @@ func (self *SElbListener) GetHealthCheckURI() string {
 }
 
 func (self *SElbListener) GetHealthCheckCode() string {
-	strings.ReplaceAll()
 	panic("implement me")
 }
 
@@ -225,5 +225,40 @@ func (self *SElbListener) Delete() error {
 }
 
 func (self *SRegion) GetElbListeners(elbId string) ([]SElbListener, error) {
-	return nil, nil
+	client, err := self.GetElbV2Client()
+	if err != nil {
+		return nil, err
+	}
+
+	params := &elbv2.DescribeListenersInput{}
+	params.SetLoadBalancerArn(elbId)
+	ret, err := client.DescribeListeners(params)
+	if err != nil {
+		return nil, err
+	}
+
+	listeners := make([]SElbListener, len(ret.Listeners))
+	for i := range ret.Listeners {
+		item := ret.Listeners[i]
+		if err := FillZero(item); err != nil {
+			return nil, err
+		}
+
+		itemStr := item.String()
+		itemObj, err := jsonutils.ParseString(itemStr)
+		if err != nil {
+			return nil, err
+		}
+
+		listener := SElbListener{}
+		err = itemObj.Unmarshal(&listener)
+		if err != nil {
+			return nil, err
+		}
+
+		listener.region = self
+		listeners[i] = listener
+	}
+
+	return listeners, nil
 }
