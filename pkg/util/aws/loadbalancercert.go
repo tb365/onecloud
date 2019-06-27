@@ -2,7 +2,10 @@ package aws
 
 import (
 	"time"
+
 	"yunion.io/x/jsonutils"
+
+	api "yunion.io/x/onecloud/pkg/apis/compute"
 )
 
 type SElbCertificate struct {
@@ -17,15 +20,15 @@ func (self *SElbCertificate) GetId() string {
 }
 
 func (self *SElbCertificate) GetName() string {
-	return ""
+	return self.GetId()
 }
 
 func (self *SElbCertificate) GetGlobalId() string {
-	panic("implement me")
+	return self.GetId()
 }
 
 func (self *SElbCertificate) GetStatus() string {
-	panic("implement me")
+	return api.LB_STATUS_ENABLED
 }
 
 func (self *SElbCertificate) Refresh() error {
@@ -33,15 +36,15 @@ func (self *SElbCertificate) Refresh() error {
 }
 
 func (self *SElbCertificate) IsEmulated() bool {
-	panic("implement me")
+	return false
 }
 
 func (self *SElbCertificate) GetMetadata() *jsonutils.JSONDict {
-	panic("implement me")
+	return jsonutils.NewDict()
 }
 
 func (self *SElbCertificate) GetProjectId() string {
-	panic("implement me")
+	return ""
 }
 
 func (self *SElbCertificate) Sync(name, privateKey, publickKey string) error {

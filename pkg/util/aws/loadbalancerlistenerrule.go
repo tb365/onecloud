@@ -46,7 +46,7 @@ func (self *SElbListenerRule) Refresh() error {
 }
 
 func (self *SElbListenerRule) IsEmulated() bool {
-	panic("implement me")
+	return false
 }
 
 func (self *SElbListenerRule) GetMetadata() *jsonutils.JSONDict {
