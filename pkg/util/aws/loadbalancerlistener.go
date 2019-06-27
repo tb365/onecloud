@@ -271,3 +271,30 @@ func unmarshalAwsOutput(output string,respKey string, ret interface{}) error {
 
 	return nil
 }
+
+func (self *SRegion) GetElbListener(listenerId string) (*SElbListener, error) {
+	client, err := self.GetElbV2Client()
+	if err != nil {
+		return nil, err
+	}
+
+	params := &elbv2.DescribeListenersInput{}
+	params.SetListenerArns([]*string{&listenerId})
+	ret, err := client.DescribeListeners(params)
+	if err != nil {
+		return nil, err
+	}
+
+	listeners := []SElbListener{}
+	err = unmarshalAwsOutput(ret.String(), "Listeners", listeners)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(listeners) == 1 {
+		listeners[0].region = self
+		return &listeners[0], nil
+	}
+
+	return nil, cloudprovider.ErrNotFound
+}

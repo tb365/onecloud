@@ -186,7 +186,7 @@ func (self *SElb) CreateILoadBalancerListener(listener *cloudprovider.SLoadbalan
 }
 
 func (self *SElb) GetILoadBalancerListenerById(listenerId string) (cloudprovider.ICloudLoadbalancerListener, error) {
-	panic("implement me")
+	return self.region.GetElbListener(listenerId)
 }
 
 func (self *SRegion) DeleteElb(elbId string) error {
