@@ -525,7 +525,30 @@ func (self *SRegion) GetILoadBalancers() ([]cloudprovider.ICloudLoadbalancer, er
 }
 
 func (self *SRegion) GetILoadBalancerById(loadbalancerId string) (cloudprovider.ICloudLoadbalancer, error) {
-	return nil, cloudprovider.ErrNotImplemented
+	client, err := self.GetElbV2Client()
+	if err != nil {
+		return nil, err
+	}
+
+	params := &elbv2.DescribeLoadBalancersInput{}
+	params.SetLoadBalancerArns([]*string{&loadbalancerId})
+	ret, err := client.DescribeLoadBalancers(params)
+	if err != nil {
+		return nil, err
+	}
+
+	elbs := []SElb{}
+	err = unmarshalAwsOutput(ret.String(), "LoadBalancers", elbs)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(elbs) == 1 {
+		elbs[0].region = self
+		return &elbs[0], nil
+	}
+
+	return nil, cloudprovider.ErrNotFound
 }
 
 func (self *SRegion) GetILoadBalancerAclById(aclId string) (cloudprovider.ICloudLoadbalancerAcl, error) {
