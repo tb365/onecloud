@@ -5,7 +5,6 @@ import (
 )
 
 type SElbBackend struct {
-
 }
 
 func (self *SElbBackend) GetId() string {

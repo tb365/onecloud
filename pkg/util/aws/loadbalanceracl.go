@@ -6,7 +6,6 @@ import (
 )
 
 type SElbACL struct {
-
 }
 
 func (self *SElbACL) GetId() string {

@@ -25,7 +25,6 @@ type Condition struct {
 	Values []string `json:"Values"`
 }
 
-
 func (self *SElbListenerRule) GetId() string {
 	return self.RuleArn
 }
@@ -91,4 +90,3 @@ func (self *SElbListenerRule) GetBackendGroupId() string {
 func (self *SElbListenerRule) Delete() error {
 	panic("implement me")
 }
-

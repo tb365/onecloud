@@ -120,4 +120,3 @@ func (self *SElbBackendGroup) Delete() error {
 func (self *SElbBackendGroup) Sync(group *cloudprovider.SLoadbalancerBackendGroup) error {
 	panic("implement me")
 }
-

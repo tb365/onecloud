@@ -176,7 +176,13 @@ func (self *SElb) GetILoadBalancerBackendGroups() ([]cloudprovider.ICloudLoadbal
 }
 
 func (self *SElb) CreateILoadBalancerBackendGroup(group *cloudprovider.SLoadbalancerBackendGroup) (cloudprovider.ICloudLoadbalancerBackendGroup, error) {
-	panic("implement me")
+	backendgroup, err := self.region.CreateElbBackendgroup(group)
+	if err != nil {
+		return nil, err
+	}
+
+	backendgroup.lb = self
+	return backendgroup, nil
 }
 
 func (self *SElb) GetILoadBalancerBackendGroupById(groupId string) (cloudprovider.ICloudLoadbalancerBackendGroup, error) {
@@ -184,7 +190,13 @@ func (self *SElb) GetILoadBalancerBackendGroupById(groupId string) (cloudprovide
 }
 
 func (self *SElb) CreateILoadBalancerListener(listener *cloudprovider.SLoadbalancerListener) (cloudprovider.ICloudLoadbalancerListener, error) {
-	panic("implement me")
+	ret, err := self.region.CreateElbListener(listener)
+	if err != nil {
+		return nil, err
+	}
+
+	ret.lb = self
+	return ret, nil
 }
 
 func (self *SElb) GetILoadBalancerListenerById(listenerId string) (cloudprovider.ICloudLoadbalancerListener, error) {
@@ -207,7 +219,7 @@ func (self *SRegion) DeleteElb(elbId string) error {
 	return nil
 }
 
-func (self *SRegion) GetElbBackendgroups(elbId string,backendgroupIds []string) ([]SElbBackendGroup, error) {
+func (self *SRegion) GetElbBackendgroups(elbId string, backendgroupIds []string) ([]SElbBackendGroup, error) {
 	client, err := self.GetElbV2Client()
 	if err != nil {
 		return nil, err

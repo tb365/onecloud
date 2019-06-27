@@ -21,9 +21,9 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/aws-sdk-go/service/elbv2"
 	"github.com/aws/aws-sdk-go/service/iam"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/service/elbv2"
 
 	"yunion.io/x/jsonutils"
 	"yunion.io/x/log"
@@ -58,10 +58,10 @@ var RegionLocations = map[string]string{
 type SRegion struct {
 	multicloud.SRegion
 
-	client    *SAwsClient
-	ec2Client *ec2.EC2
-	iamClient *iam.IAM
-	s3Client  *s3.S3
+	client      *SAwsClient
+	ec2Client   *ec2.EC2
+	iamClient   *iam.IAM
+	s3Client    *s3.S3
 	elbv2Client *elbv2.ELBV2
 
 	izones []cloudprovider.ICloudZone
@@ -143,6 +143,7 @@ func (self *SRegion) GetElbV2Client() (*elbv2.ELBV2, error) {
 
 	return self.elbv2Client, nil
 }
+
 /////////////////////////////////////////////////////////////////////////////
 func (self *SRegion) fetchZones() error {
 	// todo: 这里将过滤出指定region下全部的zones。是否只过滤出可用的zone即可？ The state of the Availability Zone (available | information | impaired | unavailable)

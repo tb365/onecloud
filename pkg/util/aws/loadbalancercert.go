@@ -75,4 +75,3 @@ func (self *SElbCertificate) GetPublickKey() string {
 func (self *SElbCertificate) GetPrivateKey() string {
 	panic("implement me")
 }
-

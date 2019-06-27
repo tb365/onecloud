@@ -67,8 +67,8 @@ type SLoadbalancerListenerRule struct {
 	ListenerId     string `width:"36" charset:"ascii" nullable:"false" list:"user" create:"optional"`
 	BackendGroupId string `width:"36" charset:"ascii" nullable:"false" list:"user" create:"optional" update:"user"`
 
-	Domain string `width:"128" charset:"ascii" nullable:"false" list:"user" create:"optional"`  // deprecated
-	Path   string `width:"128" charset:"ascii" nullable:"false" list:"user" create:"optional"`  // deprecated
+	Domain string `width:"128" charset:"ascii" nullable:"false" list:"user" create:"optional"` // deprecated
+	Path   string `width:"128" charset:"ascii" nullable:"false" list:"user" create:"optional"` // deprecated
 
 	Condition string `charset:"ascii" nullable:"false" list:"user" create:"optional"`
 

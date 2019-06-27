@@ -1,6 +1,8 @@
 package aws
 
 import (
+	"fmt"
+
 	"github.com/aws/aws-sdk-go/service/elbv2"
 	"yunion.io/x/jsonutils"
 
@@ -251,7 +253,7 @@ func (self *SRegion) GetElbListeners(elbId string) ([]SElbListener, error) {
 	return listeners, nil
 }
 
-func unmarshalAwsOutput(output string,respKey string, ret interface{}) error {
+func unmarshalAwsOutput(output string, respKey string, ret interface{}) error {
 	obj, err := jsonutils.ParseString(output)
 	if err != nil {
 		return err
@@ -297,4 +299,46 @@ func (self *SRegion) GetElbListener(listenerId string) (*SElbListener, error) {
 	}
 
 	return nil, cloudprovider.ErrNotFound
+}
+
+func (self *SRegion) CreateElbListener(listener *cloudprovider.SLoadbalancerListener) (*SElbListener, error) {
+	client, err := self.GetElbV2Client()
+	if err != nil {
+		return nil, err
+	}
+
+	params := &elbv2.CreateListenerInput{}
+	params.SetLoadBalancerArn(listener.LoadbalancerID)
+	params.SetPort(int64(listener.ListenerPort))
+	params.SetProtocol(listener.ListenerType)
+	if listener.ListenerType == "HTTPS" {
+		cert := &elbv2.Certificate{
+			CertificateArn: &listener.CertificateID,
+		}
+
+		action := &elbv2.Action{}
+		action.SetType(listener.BackendGroupID)
+		action.SetTargetGroupArn("forward")
+		params.SetCertificates([]*elbv2.Certificate{cert})
+		params.SetDefaultActions([]*elbv2.Action{action})
+		params.SetSslPolicy("ELBSecurityPolicy-2016-08")
+	}
+
+	ret, err := client.CreateListener(params)
+	if err != nil {
+		return nil, err
+	}
+
+	listeners := []SElbListener{}
+	err = unmarshalAwsOutput(ret.String(), "Listeners", listeners)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(listeners) == 1 {
+		listeners[0].region = self
+		return &listeners[0], nil
+	}
+
+	return nil, fmt.Errorf("CreateElbListener err %#v", listeners)
 }
