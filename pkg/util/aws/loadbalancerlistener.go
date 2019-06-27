@@ -10,6 +10,7 @@ import (
 
 type SElbListener struct {
 	region *SRegion
+	lb     *SElb
 
 	Port            int             `json:"Port"`
 	Protocol        string          `json:"Protocol"`

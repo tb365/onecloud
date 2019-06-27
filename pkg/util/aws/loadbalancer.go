@@ -1,6 +1,7 @@
 package aws
 
 import (
+	"github.com/aws/aws-sdk-go/service/elbv2"
 	"yunion.io/x/jsonutils"
 
 	api "yunion.io/x/onecloud/pkg/apis/compute"
@@ -12,6 +13,8 @@ https://docs.aws.amazon.com/elasticloadbalancing/latest/APIReference/Welcome.htm
 */
 
 type SElb struct {
+	region *SRegion
+
 	Type                  string             `json:"Type"`
 	Scheme                string             `json:"Scheme"`
 	IPAddressType         string             `json:"IpAddressType"`
@@ -129,19 +132,30 @@ func (self *SElb) GetEgressMbps() int {
 }
 
 func (self *SElb) Delete() error {
-	panic("implement me")
+	return self.region.DeleteElb(self.GetId())
 }
 
 func (self *SElb) Start() error {
-	panic("implement me")
+	return nil
 }
 
 func (self *SElb) Stop() error {
-	panic("implement me")
+	return cloudprovider.ErrNotSupported
 }
 
 func (self *SElb) GetILoadBalancerListeners() ([]cloudprovider.ICloudLoadbalancerListener, error) {
-	panic("implement me")
+	listeners, err := self.region.GetElbListeners(self.GetId())
+	if err != nil {
+		return nil, err
+	}
+
+	ret := make([]cloudprovider.ICloudLoadbalancerListener, len(listeners))
+	for i := range listeners {
+		listeners[i].lb = self
+		ret[i] = &listeners[i]
+	}
+
+	return ret, nil
 }
 
 func (self *SElb) GetILoadBalancerBackendGroups() ([]cloudprovider.ICloudLoadbalancerBackendGroup, error) {
@@ -162,4 +176,20 @@ func (self *SElb) CreateILoadBalancerListener(listener *cloudprovider.SLoadbalan
 
 func (self *SElb) GetILoadBalancerListenerById(listenerId string) (cloudprovider.ICloudLoadbalancerListener, error) {
 	panic("implement me")
+}
+
+func (self *SRegion) DeleteElb(elbId string) error {
+	client, err := self.GetElbV2Client()
+	if err != nil {
+		return err
+	}
+
+	params := &elbv2.DeleteLoadBalancerInput{}
+	params.SetLoadBalancerArn(elbId)
+	_, err = client.DeleteLoadBalancer(params)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
