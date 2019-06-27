@@ -556,15 +556,44 @@ func (self *SRegion) GetILoadBalancerAclById(aclId string) (cloudprovider.ICloud
 }
 
 func (self *SRegion) GetILoadBalancerCertificateById(certId string) (cloudprovider.ICloudLoadbalancerCertificate, error) {
-	return nil, cloudprovider.ErrNotImplemented
+	client, err := self.GetElbV2Client()
+	if err != nil {
+		return nil, err
+	}
+
+	params := &elbv2.DescribeListenerCertificatesInput{}
+	ret, err := client.DescribeListenerCertificates(params)
+	if err != nil {
+		return nil, err
+	}
+
+	certs := []SElbCertificate{}
+	err = unmarshalAwsOutput(ret.String(), "Certificates", certs)
+	if err != nil {
+		return nil, err
+	}
+
+	for i := range certs {
+		if certs[i].GetId() == certId {
+			return &certs[i], nil
+		}
+	}
+
+	return nil, cloudprovider.ErrNotFound
 }
 
 func (self *SRegion) CreateILoadBalancerCertificate(cert *cloudprovider.SLoadbalancerCertificate) (cloudprovider.ICloudLoadbalancerCertificate, error) {
+	client, err := self.getIamClient()
+	if err != nil {
+		return nil, err
+	}
+
+	// todo: implement me
 	return nil, cloudprovider.ErrNotImplemented
 }
 
 func (self *SRegion) GetILoadBalancerAcls() ([]cloudprovider.ICloudLoadbalancerAcl, error) {
-	return nil, cloudprovider.ErrNotImplemented
+	return nil, cloudprovider.ErrNotSupported
 }
 
 func (self *SRegion) GetILoadBalancerCertificates() ([]cloudprovider.ICloudLoadbalancerCertificate, error) {
