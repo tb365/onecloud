@@ -267,3 +267,11 @@ func (self *SRegion) GetElbBackendgroup(backendgroupId string) (*SElbBackendGrou
 
 	return nil, cloudprovider.ErrNotFound
 }
+
+func (self *SRegion) CreateElbBackendgroup(group *cloudprovider.SLoadbalancerBackendGroup)  (*SElbBackendGroup, error) {
+	params := elbv2.CreateListenerInput{}
+	params.SetLoadBalancerArn(group.LoadbalancerID)
+	params.SetProtocol(group.ListenType)
+	// todo: implement me
+	return nil, nil
+}
