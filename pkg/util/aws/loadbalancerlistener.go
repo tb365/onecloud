@@ -237,13 +237,8 @@ func (self *SRegion) GetElbListeners(elbId string) ([]SElbListener, error) {
 		return nil, err
 	}
 
-	listenerObjs, err := jsonutils.ParseString(ret.String())
-	if err != nil {
-		return nil, err
-	}
-
 	listeners := []SElbListener{}
-	err = listenerObjs.Unmarshal(&listeners, "Listeners")
+	err = unmarshalAwsOutput(ret.String(), "Listeners", listeners)
 	if err != nil {
 		return nil, err
 	}
@@ -253,4 +248,25 @@ func (self *SRegion) GetElbListeners(elbId string) ([]SElbListener, error) {
 	}
 
 	return listeners, nil
+}
+
+func unmarshalAwsOutput(output string,respKey string, ret interface{}) error {
+	obj, err := jsonutils.ParseString(output)
+	if err != nil {
+		return err
+	}
+
+	if len(respKey) == 0 {
+		err = obj.Unmarshal(&ret)
+		if err != nil {
+			return err
+		}
+	} else {
+		err = obj.Unmarshal(&ret, respKey)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
