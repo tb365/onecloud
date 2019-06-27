@@ -8,6 +8,9 @@ import (
 )
 
 type SElbBackendGroup struct {
+	region *SRegion
+	lb     *SElb
+
 	TargetGroupName            string   `json:"TargetGroupName"`
 	Protocol                   string   `json:"Protocol"`
 	Port                       int64    `json:"Port"`
