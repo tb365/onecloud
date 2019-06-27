@@ -1,62 +1,82 @@
 package aws
 
 import (
+	"fmt"
+
+	api "yunion.io/x/onecloud/pkg/apis/compute"
 	"yunion.io/x/jsonutils"
 )
 
 type SElbBackend struct {
+	region *SRegion
+	group  *SElbBackendGroup
+
+	Target       Target       `json:"Target"`
+	TargetHealth TargetHealth `json:"TargetHealth"`
+}
+
+type Target struct {
+	ID   string `json:"Id"`
+	Port int  `json:"Port"`
+}
+
+type TargetHealth struct {
+	State       string `json:"State"`
+	Reason      string `json:"Reason"`
+	Description string `json:"Description"`
 }
 
 func (self *SElbBackend) GetId() string {
-	panic("implement me")
+	return fmt.Sprintf("%s/%s/%s", self.group.GetId(), self.Target.ID, self.Target.Port)
 }
 
 func (self *SElbBackend) GetName() string {
-	panic("implement me")
+	return self.GetId()
 }
 
 func (self *SElbBackend) GetGlobalId() string {
-	panic("implement me")
+	return self.GetId()
 }
 
 func (self *SElbBackend) GetStatus() string {
-	panic("implement me")
+	return api.LB_STATUS_ENABLED
 }
 
 func (self *SElbBackend) Refresh() error {
-	panic("implement me")
+	// todo: implement me
+	return nil
 }
 
 func (self *SElbBackend) IsEmulated() bool {
-	panic("implement me")
+	return false
 }
 
 func (self *SElbBackend) GetMetadata() *jsonutils.JSONDict {
-	panic("implement me")
+	return jsonutils.NewDict()
 }
 
 func (self *SElbBackend) GetProjectId() string {
-	panic("implement me")
+	return ""
 }
 
 func (self *SElbBackend) GetWeight() int {
-	panic("implement me")
+	return 0
 }
 
 func (self *SElbBackend) GetPort() int {
-	panic("implement me")
+	return self.Target.Port
 }
 
 func (self *SElbBackend) GetBackendType() string {
-	panic("implement me")
+	return api.LB_BACKEND_GUEST
 }
 
 func (self *SElbBackend) GetBackendRole() string {
-	panic("implement me")
+	return api.LB_BACKEND_ROLE_DEFAULT
 }
 
 func (self *SElbBackend) GetBackendId() string {
-	panic("implement me")
+	return self.Target.ID
 }
 
 func (self *SElbBackend) SyncConf(port, weight int) error {
