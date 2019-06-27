@@ -178,7 +178,7 @@ func (self *SElb) CreateILoadBalancerBackendGroup(group *cloudprovider.SLoadbala
 }
 
 func (self *SElb) GetILoadBalancerBackendGroupById(groupId string) (cloudprovider.ICloudLoadbalancerBackendGroup, error) {
-	panic("implement me")
+	return self.region.GetElbBackendgroup(groupId)
 }
 
 func (self *SElb) CreateILoadBalancerListener(listener *cloudprovider.SLoadbalancerListener) (cloudprovider.ICloudLoadbalancerListener, error) {
@@ -238,4 +238,32 @@ func (self *SRegion) GetElbBackendgroups(elbId string,backendgroupIds []string) 
 	}
 
 	return backendgroups, nil
+}
+
+func (self *SRegion) GetElbBackendgroup(backendgroupId string) (*SElbBackendGroup, error) {
+	client, err := self.GetElbV2Client()
+	if err != nil {
+		return nil, err
+	}
+
+	params := &elbv2.DescribeTargetGroupsInput{}
+	params.SetTargetGroupArns([]*string{&backendgroupId})
+
+	ret, err := client.DescribeTargetGroups(params)
+	if err != nil {
+		return nil, err
+	}
+
+	backendgroups := []SElbBackendGroup{}
+	err = unmarshalAwsOutput(ret.String(), "TargetGroups", backendgroups)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(backendgroups) == 1 {
+		backendgroups[0].region = self
+		return &backendgroups[0], nil
+	}
+
+	return nil, cloudprovider.ErrNotFound
 }
