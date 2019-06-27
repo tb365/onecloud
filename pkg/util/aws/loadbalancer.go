@@ -1,6 +1,8 @@
 package aws
 
 import (
+	"fmt"
+
 	"github.com/aws/aws-sdk-go/service/elbv2"
 	"yunion.io/x/jsonutils"
 
@@ -268,10 +270,43 @@ func (self *SRegion) GetElbBackendgroup(backendgroupId string) (*SElbBackendGrou
 	return nil, cloudprovider.ErrNotFound
 }
 
-func (self *SRegion) CreateElbBackendgroup(group *cloudprovider.SLoadbalancerBackendGroup)  (*SElbBackendGroup, error) {
-	params := elbv2.CreateListenerInput{}
-	params.SetLoadBalancerArn(group.LoadbalancerID)
+// 目前只支持target type ：instance
+func (self *SRegion) CreateElbBackendgroup(group *cloudprovider.SLoadbalancerBackendGroup) (*SElbBackendGroup, error) {
+	params := &elbv2.CreateTargetGroupInput{}
 	params.SetProtocol(group.ListenType)
-	// todo: implement me
-	return nil, nil
+	params.SetPort(int64(group.ListenPort))
+	params.SetVpcId(group.VpcId)
+	params.SetName(group.Name)
+	params.SetTargetType("instance")
+	if group.HealthCheck != nil {
+		params.SetHealthCheckIntervalSeconds(int64(group.HealthCheck.HealthCheckInterval))
+		params.SetHealthCheckPath(group.HealthCheck.HealthCheckURI)
+		params.SetHealthCheckPort("traffic-port")
+		params.SetHealthCheckProtocol(group.HealthCheck.HealthCheckType)
+		params.SetHealthCheckTimeoutSeconds(int64(group.HealthCheck.HealthCheckTimeout))
+		params.SetHealthyThresholdCount(int64(group.HealthCheck.HealthCheckRise))
+	}
+
+	client, err := self.GetElbV2Client()
+	if err != nil {
+		return nil, err
+	}
+
+	ret, err := client.CreateTargetGroup(params)
+	if err != nil {
+		return nil, err
+	}
+
+	backendgroups := []SElbBackendGroup{}
+	err = unmarshalAwsOutput(ret.String(), "TargetGroups", backendgroups)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(backendgroups) == 1 {
+		backendgroups[0].region = self
+		return &backendgroups[0], nil
+	}
+
+	return nil, fmt.Errorf("CreateElbBackendgroup error: %#v", backendgroups)
 }
