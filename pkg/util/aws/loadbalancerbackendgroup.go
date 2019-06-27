@@ -21,14 +21,14 @@ type SElbBackendGroup struct {
 	Port                       int64    `json:"Port"`
 	VpcID                      string   `json:"VpcId"`
 	TargetType                 string   `json:"TargetType"`
-	HealthyThresholdCount      int64    `json:"HealthyThresholdCount"`
+	HealthyThresholdCount      int    `json:"HealthyThresholdCount"`
 	Matcher                    Matcher  `json:"Matcher"`
-	UnhealthyThresholdCount    int64    `json:"UnhealthyThresholdCount"`
+	UnhealthyThresholdCount    int    `json:"UnhealthyThresholdCount"`
 	HealthCheckPath            string   `json:"HealthCheckPath"`
 	HealthCheckProtocol        string   `json:"HealthCheckProtocol"`
 	HealthCheckPort            string   `json:"HealthCheckPort"`
-	HealthCheckIntervalSeconds int64    `json:"HealthCheckIntervalSeconds"`
-	HealthCheckTimeoutSeconds  int64    `json:"HealthCheckTimeoutSeconds"`
+	HealthCheckIntervalSeconds int    `json:"HealthCheckIntervalSeconds"`
+	HealthCheckTimeoutSeconds  int   `json:"HealthCheckTimeoutSeconds"`
 	TargetGroupArn             string   `json:"TargetGroupArn"`
 	LoadBalancerArns           []string `json:"LoadBalancerArns"`
 }
@@ -120,27 +120,41 @@ func (self *SElbBackendGroup) GetScheduler() string {
 }
 
 func (self *SElbBackendGroup) GetHealthCheck() (*cloudprovider.SLoadbalancerHealthCheck, error) {
-	panic("implement me")
+	health := &cloudprovider.SLoadbalancerHealthCheck{}
+	health.HealthCheckRise = self.HealthyThresholdCount
+	health.HealthCheckInterval = self.HealthCheckIntervalSeconds
+	health.HealthCheckURI = self.HealthCheckPath
+	health.HealthCheckType = self.HealthCheckProtocol
+	health.HealthCheckTimeout = self.HealthCheckTimeoutSeconds
+
+	return health, nil
 }
 
 func (self *SElbBackendGroup) GetStickySession() (*cloudprovider.SLoadbalancerStickySession, error) {
-	panic("implement me")
+	return nil, nil
 }
 
 func (self *SElbBackendGroup) AddBackendServer(serverId string, weight int, port int) (cloudprovider.ICloudLoadbalancerBackend, error) {
-	panic("implement me")
+	backend, err := self.region.AddElbBackend(self.GetId(), serverId, weight, port)
+	if err != nil {
+		return nil, err
+	}
+
+	backend.region = self.region
+	backend.group = self
+	return backend, nil
 }
 
 func (self *SElbBackendGroup) RemoveBackendServer(serverId string, weight int, port int) error {
-	panic("implement me")
+	return self.region.RemoveElbBackend(self.GetId(), serverId, weight, port)
 }
 
 func (self *SElbBackendGroup) Delete() error {
-	panic("implement me")
+	return self.region.DeleteElbBackendGroup(self.GetId())
 }
 
 func (self *SElbBackendGroup) Sync(group *cloudprovider.SLoadbalancerBackendGroup) error {
-	panic("implement me")
+	return self.region.SyncELbBackendGroup(self.GetId(), group)
 }
 
 func (self *SRegion) GetELbBackends(backendgroupId string) ([]SElbBackend, error) {
@@ -217,4 +231,139 @@ func parseElbBackendId(id string) (string, string, int, error) {
 	}
 
 	return segs[0], segs[1], port, nil
+}
+
+func genElbBackendId(backendgroupId string,serverId string,port int) string {
+	return strings.Join([]string{backendgroupId, serverId, strconv.Itoa(port)}, "::")
+}
+
+func (self *SRegion) AddElbBackend(backendgroupId, serverId string, weight int, port int) (*SElbBackend, error) {
+	client, err := self.GetElbV2Client()
+	if err != nil {
+		return nil, err
+	}
+
+	params := &elbv2.RegisterTargetsInput{}
+	params.SetTargetGroupArn(backendgroupId)
+	desc := &elbv2.TargetDescription{}
+	desc.SetId(serverId)
+	desc.SetPort(int64(port))
+	params.SetTargets([]*elbv2.TargetDescription{desc})
+	ret, err := client.RegisterTargets(params)
+	if err != nil {
+		return nil, err
+	}
+
+	backends := []SElbBackend{}
+	err = unmarshalAwsOutput(ret.String(), "TargetHealthDescriptions", backends)
+	if err != nil {
+		return nil, err
+	}
+
+	return self.GetELbBackend(genElbBackendId(backendgroupId, serverId, port))
+}
+
+func (self *SRegion) RemoveElbBackend(backendgroupId,serverId string, weight int, port int) error {
+	client, err := self.GetElbV2Client()
+	if err != nil {
+		return err
+	}
+
+	params := &elbv2.DeregisterTargetsInput{}
+	params.SetTargetGroupArn(backendgroupId)
+	desc := &elbv2.TargetDescription{}
+	desc.SetId(serverId)
+	desc.SetPort(int64(port))
+	params.SetTargets([]*elbv2.TargetDescription{desc})
+	_, err = client.DeregisterTargets(params)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (self *SRegion) DeleteElbBackendGroup(backendgroupId string) error {
+	client, err := self.GetElbV2Client()
+	if err != nil {
+		return err
+	}
+
+	params := &elbv2.DeleteTargetGroupInput{}
+	params.SetTargetGroupArn(backendgroupId)
+	_, err = client.DeleteTargetGroup(params)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (self *SRegion) SyncELbBackendGroup(backendgroupId string, group *cloudprovider.SLoadbalancerBackendGroup) error {
+	client, err := self.GetElbV2Client()
+	if err != nil {
+		return err
+	}
+
+	params := &elbv2.ModifyTargetGroupInput{}
+	params.SetTargetGroupArn(backendgroupId)
+	params.SetHealthyThresholdCount(int64(group.HealthCheck.HealthCheckRise))
+	params.SetHealthCheckTimeoutSeconds(int64(group.HealthCheck.HealthCheckTimeout))
+	params.SetHealthCheckProtocol(group.HealthCheck.HealthCheckType)
+	params.SetHealthCheckPath(group.HealthCheck.HealthCheckURI)
+	params.SetHealthCheckIntervalSeconds(int64(group.HealthCheck.HealthCheckInterval))
+	// params.SetMatcher()
+	// params.SetUnhealthyThresholdCount()
+	_, err = client.ModifyTargetGroup(params)
+	if err != nil {
+		return err
+	}
+
+	err = self.RemoveElbBackends(backendgroupId)
+	if err != nil {
+		return err
+	}
+
+	return self.AddElbBackends(backendgroupId, group.Backends)
+}
+
+func (self *SRegion) RemoveElbBackends(backendgroupId string) error {
+	client, err := self.GetElbV2Client()
+	if err != nil {
+		return err
+	}
+
+	params := &elbv2.DeregisterTargetsInput{}
+	params.SetTargetGroupArn(backendgroupId)
+	_, err = client.DeregisterTargets(params)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (self *SRegion) AddElbBackends(backendgroupId string, backends []cloudprovider.SLoadbalancerBackend) error {
+	client, err := self.GetElbV2Client()
+	if err != nil {
+		return err
+	}
+
+	params := &elbv2.RegisterTargetsInput{}
+	params.SetTargetGroupArn(backendgroupId)
+	targets := []*elbv2.TargetDescription{}
+	for i := range backends {
+		desc := &elbv2.TargetDescription{}
+		desc.SetId(backends[i].ID)
+		desc.SetPort(int64(backends[i].Port))
+		targets = append(targets, desc)
+	}
+
+	params.SetTargets(targets)
+	_, err = client.RegisterTargets(params)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
