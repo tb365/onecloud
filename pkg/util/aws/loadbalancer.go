@@ -72,7 +72,17 @@ func (self *SElb) GetStatus() string {
 }
 
 func (self *SElb) Refresh() error {
-	panic("implement me")
+	ielb, err := self.region.GetILoadBalancerById(self.GetId())
+	if err != nil {
+		return err
+	}
+
+	err = jsonutils.Update(self, ielb)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (self *SElb) IsEmulated() bool {
