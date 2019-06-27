@@ -237,27 +237,19 @@ func (self *SRegion) GetElbListeners(elbId string) ([]SElbListener, error) {
 		return nil, err
 	}
 
-	listeners := make([]SElbListener, len(ret.Listeners))
-	for i := range ret.Listeners {
-		item := ret.Listeners[i]
-		if err := FillZero(item); err != nil {
-			return nil, err
-		}
+	listenerObjs, err := jsonutils.ParseString(ret.String())
+	if err != nil {
+		return nil, err
+	}
 
-		itemStr := item.String()
-		itemObj, err := jsonutils.ParseString(itemStr)
-		if err != nil {
-			return nil, err
-		}
+	listeners := []SElbListener{}
+	err = listenerObjs.Unmarshal(&listeners, "Listeners")
+	if err != nil {
+		return nil, err
+	}
 
-		listener := SElbListener{}
-		err = itemObj.Unmarshal(&listener)
-		if err != nil {
-			return nil, err
-		}
-
-		listener.region = self
-		listeners[i] = listener
+	for i := range listeners {
+		listeners[i].region = self
 	}
 
 	return listeners, nil
