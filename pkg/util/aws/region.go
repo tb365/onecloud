@@ -648,11 +648,48 @@ func (self *SRegion) GetILoadBalancerCertificates() ([]cloudprovider.ICloudLoadb
 }
 
 func (self *SRegion) CreateILoadBalancer(loadbalancer *cloudprovider.SLoadbalancer) (cloudprovider.ICloudLoadbalancer, error) {
-	return nil, cloudprovider.ErrNotImplemented
+	client, err := self.GetElbV2Client()
+	if err != nil {
+		return nil, err
+	}
+
+	params := &elbv2.CreateLoadBalancerInput{}
+	params.SetName(loadbalancer.Name)
+	// todo: loadbalancer loadbalancerspec ??
+	params.SetType(loadbalancer.LoadbalancerSpec)
+	params.SetIpAddressType("ipv4")
+	if loadbalancer.AddressType == api.LB_ADDR_TYPE_INTERNET {
+		params.SetScheme("internet-facing")
+	} else {
+		params.SetScheme("internal")
+	}
+
+	// params.SetSecurityGroups()
+	// [Application Load Balancers] You must specify subnets from at least two Availability Zones.
+	// [Network Load Balancers] You can specify subnets from one or more Availability Zones.
+	// todo: fix me loadbalancer NetworkID
+	params.SetSubnets([]*string{&loadbalancer.NetworkID})
+	ret, err := client.CreateLoadBalancer(params)
+	if err != nil {
+		return nil, err
+	}
+
+	elbs := []SElb{}
+	err = unmarshalAwsOutput(ret.String(), "LoadBalancers", elbs)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(elbs) == 1 {
+		elbs[0].region = self
+		return &elbs[0], nil
+	}
+
+	return nil, fmt.Errorf("CreateILoadBalancer error %#v", elbs)
 }
 
 func (self *SRegion) CreateILoadBalancerAcl(acl *cloudprovider.SLoadbalancerAccessControlList) (cloudprovider.ICloudLoadbalancerAcl, error) {
-	return nil, cloudprovider.ErrNotImplemented
+	return nil, cloudprovider.ErrNotSupported
 }
 
 func (self *SRegion) GetSkus(zoneId string) ([]cloudprovider.ICloudSku, error) {
