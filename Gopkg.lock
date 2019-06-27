@@ -242,7 +242,7 @@
   revision = "e59b73d3c2bf1c328ccb78e683c0462fa1a473c7"
 
 [[projects]]
-  digest = "1:a3bc13ba8268f6f77ed5647943f2d1ba7dac7967723677c4b5c1109fc0042cb9"
+  digest = "1:4661e6518216da0113a8833434397ea18635135684c4f6d1e557e3a560484ff5"
   name = "github.com/aws/aws-sdk-go"
   packages = [
     "aws",
@@ -272,14 +272,18 @@
     "private/protocol/ec2query",
     "private/protocol/eventstream",
     "private/protocol/eventstream/eventstreamapi",
+    "private/protocol/json/jsonutil",
+    "private/protocol/jsonrpc",
     "private/protocol/query",
     "private/protocol/query/queryutil",
     "private/protocol/rest",
     "private/protocol/restxml",
     "private/protocol/xml/xmlutil",
+    "service/acm",
     "service/ec2",
     "service/elbv2",
     "service/iam",
+    "service/kms",
     "service/s3",
     "service/s3/s3iface",
     "service/s3/s3manager",
@@ -1833,9 +1837,11 @@
     "github.com/aws/aws-sdk-go/aws",
     "github.com/aws/aws-sdk-go/aws/credentials",
     "github.com/aws/aws-sdk-go/aws/session",
+    "github.com/aws/aws-sdk-go/service/acm",
     "github.com/aws/aws-sdk-go/service/ec2",
     "github.com/aws/aws-sdk-go/service/elbv2",
     "github.com/aws/aws-sdk-go/service/iam",
+    "github.com/aws/aws-sdk-go/service/kms",
     "github.com/aws/aws-sdk-go/service/s3",
     "github.com/aws/aws-sdk-go/service/s3/s3manager",
     "github.com/bitly/go-simplejson",

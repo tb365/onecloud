@@ -20,6 +20,7 @@ import (
 	sdk "github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/acm"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/elbv2"
 	"github.com/aws/aws-sdk-go/service/iam"
@@ -63,6 +64,7 @@ type SRegion struct {
 	iamClient   *iam.IAM
 	s3Client    *s3.S3
 	elbv2Client *elbv2.ELBV2
+	acmClient   *acm.ACM
 
 	izones []cloudprovider.ICloudZone
 	ivpcs  []cloudprovider.ICloudVpc
@@ -142,6 +144,20 @@ func (self *SRegion) GetElbV2Client() (*elbv2.ELBV2, error) {
 	}
 
 	return self.elbv2Client, nil
+}
+
+func (self *SRegion) GetAcmClient() (*acm.ACM, error) {
+	if self.acmClient == nil {
+		s, err := self.getAwsSession()
+
+		if err != nil {
+			return nil, err
+		}
+
+		self.acmClient = acm.New(s)
+	}
+
+	return self.acmClient, nil
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -561,6 +577,7 @@ func (self *SRegion) GetILoadBalancerCertificateById(certId string) (cloudprovid
 		return nil, err
 	}
 
+	// 	client.DescribeCertificate() ?
 	params := &elbv2.DescribeListenerCertificatesInput{}
 	ret, err := client.DescribeListenerCertificates(params)
 	if err != nil {
@@ -583,13 +600,20 @@ func (self *SRegion) GetILoadBalancerCertificateById(certId string) (cloudprovid
 }
 
 func (self *SRegion) CreateILoadBalancerCertificate(cert *cloudprovider.SLoadbalancerCertificate) (cloudprovider.ICloudLoadbalancerCertificate, error) {
-	client, err := self.getIamClient()
+	client, err := self.GetAcmClient()
 	if err != nil {
 		return nil, err
 	}
 
-	// todo: implement me
-	return nil, cloudprovider.ErrNotImplemented
+	params := &acm.ImportCertificateInput{}
+	params.SetPrivateKey([]byte(cert.PrivateKey))
+	params.SetCertificate([]byte(cert.Certificate))
+	ret, err := client.ImportCertificate(params)
+	if err != nil {
+		return nil, err
+	}
+
+	return self.GetILoadBalancerCertificateById(*ret.CertificateArn)
 }
 
 func (self *SRegion) GetILoadBalancerAcls() ([]cloudprovider.ICloudLoadbalancerAcl, error) {
@@ -597,7 +621,30 @@ func (self *SRegion) GetILoadBalancerAcls() ([]cloudprovider.ICloudLoadbalancerA
 }
 
 func (self *SRegion) GetILoadBalancerCertificates() ([]cloudprovider.ICloudLoadbalancerCertificate, error) {
-	return nil, cloudprovider.ErrNotImplemented
+	client, err := self.GetAcmClient()
+	if err != nil {
+		return nil, err
+	}
+
+	params := &acm.ListCertificatesInput{}
+	ret, err := client.ListCertificates(params)
+	if err != nil {
+		return nil, err
+	}
+
+	certs := []SElbCertificate{}
+	err = unmarshalAwsOutput(ret.String(), "CertificateSummaryList", certs)
+	if err != nil {
+		return nil, err
+	}
+
+	icerts := []cloudprovider.ICloudLoadbalancerCertificate{}
+	for i := range certs {
+		certs[i].region = self
+		icerts[i] = &certs[i]
+	}
+
+	return icerts, nil
 }
 
 func (self *SRegion) CreateILoadBalancer(loadbalancer *cloudprovider.SLoadbalancer) (cloudprovider.ICloudLoadbalancer, error) {
