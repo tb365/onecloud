@@ -27,7 +27,7 @@ type TargetHealth struct {
 }
 
 func (self *SElbBackend) GetId() string {
-	return fmt.Sprintf("%s/%s/%s", self.group.GetId(), self.Target.ID, self.Target.Port)
+	return fmt.Sprintf("%s::%s::%s", self.group.GetId(), self.Target.ID, self.Target.Port)
 }
 
 func (self *SElbBackend) GetName() string {

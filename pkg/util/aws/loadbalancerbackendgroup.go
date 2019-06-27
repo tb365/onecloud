@@ -1,6 +1,11 @@
 package aws
 
 import (
+	"fmt"
+	"strconv"
+	"strings"
+
+	"github.com/aws/aws-sdk-go/service/elbv2"
 	"yunion.io/x/jsonutils"
 
 	api "yunion.io/x/onecloud/pkg/apis/compute"
@@ -73,11 +78,28 @@ func (self *SElbBackendGroup) GetType() string {
 }
 
 func (self *SElbBackendGroup) GetILoadbalancerBackends() ([]cloudprovider.ICloudLoadbalancerBackend, error) {
-	panic("implement me")
+	backends, err := self.region.GetELbBackends(self.GetId())
+	if err != nil {
+		return nil, err
+	}
+
+	ibackends := make([]cloudprovider.ICloudLoadbalancerBackend, len(backends))
+	for i := range backends {
+		backends[i].region = self.region
+		ibackends[i] = &backends[i]
+	}
+
+	return ibackends, nil
 }
 
 func (self *SElbBackendGroup) GetILoadbalancerBackendById(backendId string) (cloudprovider.ICloudLoadbalancerBackend, error) {
-	panic("implement me")
+	backend, err := self.region.GetELbBackend(backendId)
+	if err != nil {
+		return nil, err
+	}
+
+	backend.group = self
+	return backend, nil
 }
 
 func (self *SElbBackendGroup) GetProtocolType() string {
@@ -119,4 +141,80 @@ func (self *SElbBackendGroup) Delete() error {
 
 func (self *SElbBackendGroup) Sync(group *cloudprovider.SLoadbalancerBackendGroup) error {
 	panic("implement me")
+}
+
+func (self *SRegion) GetELbBackends(backendgroupId string) ([]SElbBackend, error) {
+	client, err := self.GetElbV2Client()
+	if err != nil {
+		return nil, err
+	}
+
+	params := &elbv2.DescribeTargetHealthInput{}
+	params.SetTargetGroupArn(backendgroupId)
+	ret, err := client.DescribeTargetHealth(params)
+	if err != nil {
+		return nil, err
+	}
+
+	backends := []SElbBackend{}
+	err = unmarshalAwsOutput(ret.String(), "TargetHealthDescriptions", backends)
+	if err != nil {
+		return nil, err
+	}
+
+	for i := range backends {
+		backends[i].region = self
+	}
+
+	return backends, nil
+}
+
+func (self *SRegion) GetELbBackend(backendId string) (*SElbBackend, error) {
+	client, err := self.GetElbV2Client()
+	if err != nil {
+		return nil, err
+	}
+
+	groupId, instanceId, port, err := parseElbBackendId(backendId)
+	if err != nil {
+		return nil, err
+	}
+
+	params := &elbv2.DescribeTargetHealthInput{}
+	desc := &elbv2.TargetDescription{}
+	desc.SetPort(int64(port))
+	desc.SetId(instanceId)
+	params.SetTargets([]*elbv2.TargetDescription{desc})
+	params.SetTargetGroupArn(groupId)
+	ret, err := client.DescribeTargetHealth(params)
+	if err != nil {
+		return nil, err
+	}
+
+	backends := []SElbBackend{}
+	err = unmarshalAwsOutput(ret.String(), "TargetHealthDescriptions", backends)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(backends) == 1 {
+		backends[0].region = self
+		return &backends[0], nil
+	}
+
+	return nil, cloudprovider.ErrNotFound
+}
+
+func parseElbBackendId(id string) (string, string, int, error) {
+	segs := strings.Split(id, "::")
+	if len(segs) != 3 {
+		return "", "", 0, fmt.Errorf("%s is not a valid backend id", id)
+	}
+
+	port, err := strconv.Atoi(segs[2])
+	if err != nil {
+		return "", "", 0, fmt.Errorf("%s is not a valid backend id, %s", id, err)
+	}
+
+	return segs[0], segs[1], port, nil
 }
