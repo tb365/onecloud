@@ -80,5 +80,19 @@ func (self *SElbBackend) GetBackendId() string {
 }
 
 func (self *SElbBackend) SyncConf(port, weight int) error {
-	panic("implement me")
+	return self.region.SyncElbBackend(self.GetId(), self.GetBackendId(), self.Target.Port, port)
+}
+
+func (self *SRegion) SyncElbBackend(backendId, serverId string,oldPort, newPort int) error {
+	err := self.RemoveElbBackend(backendId, serverId, 0, oldPort)
+	if err != nil {
+		return err
+	}
+
+	_, err = self.AddElbBackend(backendId, serverId, 0, newPort)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
