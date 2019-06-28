@@ -3,11 +3,14 @@ package aws
 import (
 	"strings"
 
+	"github.com/aws/aws-sdk-go/service/elbv2"
 	"yunion.io/x/jsonutils"
 	api "yunion.io/x/onecloud/pkg/apis/compute"
 )
 
 type SElbListenerRule struct {
+	region *SRegion
+
 	Priority   string      `json:"Priority"`
 	IsDefault  bool        `json:"IsDefault"`
 	Actions    []Action    `json:"Actions"`
@@ -88,5 +91,21 @@ func (self *SElbListenerRule) GetBackendGroupId() string {
 }
 
 func (self *SElbListenerRule) Delete() error {
-	panic("implement me")
+	return self.region.DeleteElbListenerRule(self.GetId())
+}
+
+func (self *SRegion) DeleteElbListenerRule(ruleId string) error {
+	client, err := self.GetElbV2Client()
+	if err != nil {
+		return err
+	}
+
+	params := &elbv2.DeleteRuleInput{}
+	params.SetRuleArn(ruleId)
+	_, err = client.DeleteRule(params)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
