@@ -1,6 +1,7 @@
 package models
 
 import (
+	"yunion.io/x/jsonutils"
 	"yunion.io/x/onecloud/pkg/cloudcommon/db"
 )
 
@@ -40,4 +41,8 @@ type SLoadbalancerListenerRuleV2 struct {
 	BackendGroupId string `width:"36" charset:"ascii" nullable:"false" list:"user" create:"optional" update:"user"`
 
 	Condition string `charset:"ascii" nullable:"false" list:"user" create:"optional"`
+}
+
+func ListenerRuleParser(condition string) (jsonutils.JSONObject, error) {
+
 }
