@@ -51,12 +51,7 @@ func init() {
 	LoadbalancerListenerRuleManager.SetVirtualObject(LoadbalancerListenerRuleManager)
 }
 
-/*
-date 2019.06.25:
-新增condition字段。通过特定格式的JSON字符串，
-支持多个条件(eg. Host is baidu.com OR *.google.com && Path is /testOR /test2 OR /test3 )的组合。
-新接入elb不再使用domian 和path字段。原有已接入elb保持不变，后续逐步丢弃domian 和path字段，统一到condition字段中。
-*/
+
 type SLoadbalancerListenerRule struct {
 	db.SVirtualResourceBase
 	db.SExternalizedResourceBase
@@ -67,10 +62,8 @@ type SLoadbalancerListenerRule struct {
 	ListenerId     string `width:"36" charset:"ascii" nullable:"false" list:"user" create:"optional"`
 	BackendGroupId string `width:"36" charset:"ascii" nullable:"false" list:"user" create:"optional" update:"user"`
 
-	Domain string `width:"128" charset:"ascii" nullable:"false" list:"user" create:"optional"` // deprecated
-	Path   string `width:"128" charset:"ascii" nullable:"false" list:"user" create:"optional"` // deprecated
-
-	Condition string `charset:"ascii" nullable:"false" list:"user" create:"optional"`
+	Domain string `width:"128" charset:"ascii" nullable:"false" list:"user" create:"optional"`
+	Path   string `width:"128" charset:"ascii" nullable:"false" list:"user" create:"optional"`
 
 	SLoadbalancerHealthCheck // 目前只有腾讯云HTTP、HTTPS类型的健康检查是和规则绑定的。
 	SLoadbalancerHTTPRateLimiter
