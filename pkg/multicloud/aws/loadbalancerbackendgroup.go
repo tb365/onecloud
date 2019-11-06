@@ -394,9 +394,8 @@ func (self *SRegion) modifyELbBackendGroup(backendgroupId string, healthCheck *c
 	params.SetTargetGroupArn(backendgroupId)
 	params.SetHealthCheckProtocol(strings.ToUpper(healthCheck.HealthCheckType))
 	params.SetHealthyThresholdCount(int64(healthCheck.HealthCheckRise))
-
+	params.SetUnhealthyThresholdCount(int64(healthCheck.HealthCheckFail))
 	if utils.IsInStringArray(healthCheck.HealthCheckType, []string{api.LB_HEALTH_CHECK_HTTP, api.LB_LISTENER_TYPE_HTTPS}) {
-		params.SetUnhealthyThresholdCount(int64(healthCheck.HealthCheckFail))
 		params.SetHealthCheckTimeoutSeconds(int64(healthCheck.HealthCheckTimeout))
 		params.SetHealthCheckIntervalSeconds(int64(healthCheck.HealthCheckInterval))
 		if len(healthCheck.HealthCheckURI) > 0 {

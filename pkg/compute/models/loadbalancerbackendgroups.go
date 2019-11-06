@@ -614,7 +614,7 @@ func (lbbg *SLoadbalancerBackendGroup) GetAwsBackendGroupParams(lblis *SLoadbala
 		HealthCheckURI:      lblis.HealthCheckURI,
 		HealthCheckInterval: lblis.HealthCheckInterval,
 		HealthCheckRise:     lblis.HealthCheckRise,
-		HealthCheckFail:     lblis.HealthCheckFall,
+		HealthCheckFail:     lblis.HealthCheckRise,
 	}
 
 	ret.ListenerID = lblis.GetExternalId()

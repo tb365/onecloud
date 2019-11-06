@@ -931,7 +931,7 @@ func (self *SAwsRegionDriver) RequestDeleteLoadbalancerBackend(ctx context.Conte
 				return nil, err
 			}
 
-			err = iLoadbalancerBackendGroup.RemoveBackendServer(cachedlbb.ExternalId, lbb.Weight, lbb.Port)
+			err = iLoadbalancerBackendGroup.RemoveBackendServer(cachedlbb.BackendServerId, lbb.Weight, lbb.Port)
 			if err != nil {
 				return nil, err
 			}

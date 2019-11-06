@@ -82,6 +82,7 @@ type LoadbalancerCertificateListOptions struct {
 	PublicKeyBitLen    *int
 	SignatureAlgorithm string
 	Cloudregion        string
+	Usable             *bool `help:"Filter usable certificates"`
 }
 
 type LoadbalancerCertificateUpdateOptions struct {

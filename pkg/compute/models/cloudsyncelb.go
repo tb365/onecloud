@@ -80,8 +80,8 @@ func syncRegionLoadbalancers(ctx context.Context, userCred mcclient.TokenCredent
 	}
 	db.OpsLog.LogEvent(provider, db.ACT_SYNC_LB_COMPLETE, msg, userCred)
 	// 同步未关联负载均衡的后端服务器组
-	regionDriver, err := localRegion.GetRegionDriver()
-	if err != nil {
+	regionDriver := localRegion.GetDriver()
+	if regionDriver == nil {
 		msg := fmt.Sprintf("GetRegionDriver %s failed %s", localRegion.GetName(), err)
 		log.Errorln(msg)
 		return

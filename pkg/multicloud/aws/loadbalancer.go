@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go/service/elbv2"
+	"yunion.io/x/pkg/errors"
 
 	"yunion.io/x/jsonutils"
 	"yunion.io/x/log"
@@ -319,7 +320,7 @@ func (self *SRegion) GetElbBackendgroups(elbId string, backendgroupIds []string)
 func (self *SRegion) GetElbBackendgroup(backendgroupId string) (*SElbBackendGroup, error) {
 	client, err := self.GetElbV2Client()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "region.GetElbBackendgroup.GetElbV2Client")
 	}
 
 	params := &elbv2.DescribeTargetGroupsInput{}
@@ -327,13 +328,16 @@ func (self *SRegion) GetElbBackendgroup(backendgroupId string) (*SElbBackendGrou
 
 	ret, err := client.DescribeTargetGroups(params)
 	if err != nil {
-		return nil, err
+		if strings.Contains(err.Error(), "TargetGroupNotFound") {
+			return nil, cloudprovider.ErrNotFound
+		}
+		return nil, errors.Wrap(err, "region.GetElbBackendgroup.DescribeTargetGroups")
 	}
 
 	backendgroups := []SElbBackendGroup{}
 	err = unmarshalAwsOutput(ret, "TargetGroups", &backendgroups)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "region.GetElbBackendgroup.SElbBackendGroup")
 	}
 
 	if len(backendgroups) == 1 {

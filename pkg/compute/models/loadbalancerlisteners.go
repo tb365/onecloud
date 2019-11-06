@@ -855,6 +855,9 @@ func (lblis *SLoadbalancerListener) constructFieldsFromCloudListener(userCred mc
 		if len(groupId) > 0 {
 			group, err := db.FetchByExternalId(HuaweiCachedLbbgManager, groupId)
 			if err != nil {
+				if err == sql.ErrNoRows {
+					lblis.BackendGroupId = ""
+				}
 				log.Errorf("Fetch huawei loadbalancer backendgroup by external id %s failed: %s", groupId, err)
 			} else {
 				lblis.BackendGroupId = group.(*SHuaweiCachedLbbg).BackendGroupId
@@ -887,7 +890,7 @@ func (lblis *SLoadbalancerListener) updateCachedLoadbalancerBackendGroupAssociat
 	switch lblis.GetProviderName() {
 	case api.CLOUD_PROVIDER_HUAWEI:
 		_group, err := db.FetchByExternalId(HuaweiCachedLbbgManager, exteralLbbgId)
-		if err != nil {
+		if err != nil && err != sql.ErrNoRows {
 			return fmt.Errorf("Fetch huawei loadbalancer backendgroup by external id %s failed: %s", exteralLbbgId, err)
 		}
 
