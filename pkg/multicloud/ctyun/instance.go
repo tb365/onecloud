@@ -184,14 +184,30 @@ func (self *SInstance) GetIHost() cloudprovider.ICloudHost {
 
 // GET http://ctyun-api-url/apiproxy/v3/queryDataDiskByVMId
 func (self *SInstance) GetIDisks() ([]cloudprovider.ICloudDisk, error) {
-	err := self.Refresh()
+	details, err := self.GetDetails()
 	if err != nil {
-		return nil, errors.Wrap(err, "SInstance.GetIDisks.Refresh")
+		return nil, errors.Wrap(err, "SInstance.GetIDisks.GetDetails")
 	}
 
-	disks, err := self.host.zone.region.GetVMDisks(self.GetId())
-	if err != nil {
-		return nil, errors.Wrap(err, "SInstance.GetIDisks.GetVMDisks")
+	disks := []SDisk{}
+	for i := range details.Volumes {
+		volume := details.Volumes[i]
+		disk, err := self.host.zone.region.GetDisk(volume.ID)
+		if err != nil {
+			return nil, errors.Wrap(err, "SInstance.GetIDisks.GetDisk")
+		}
+
+		disks = append(disks, *disk)
+	}
+
+	ret := []SDisk{}
+	for i := 0; i < len(disks); i += 1 {
+		// 将系统盘放到第0个位置
+		if ret[i].Bootable == "true" {
+			_temp := ret[0]
+			disks[0] = ret[i]
+			disks[i] = _temp
+		}
 	}
 
 	idisks := make([]cloudprovider.ICloudDisk, 0)
@@ -390,35 +406,6 @@ func (self *SInstance) Renew(bc billing.SBillingCycle) error {
 
 func (self *SInstance) GetError() error {
 	return nil
-}
-
-func (self *SRegion) GetVMDisks(vmId string) ([]SDisk, error) {
-	params := map[string]string{
-		"VMId": vmId,
-	}
-
-	resp, err := self.client.DoGet("/apiproxy/v3/queryDataDiskByVMId", params)
-	if err != nil {
-		return nil, errors.Wrap(err, "SRegion.GetVMDisks.DoGet")
-	}
-
-	ret := make([]SDisk, 0)
-	err = resp.Unmarshal(&ret, "returnObj")
-	if err != nil {
-		return nil, errors.Wrap(err, "SRegion.GetVMDisks.Unmarshal")
-	}
-
-	disks := []SDisk{}
-	for i := 0; i < len(ret); i += 1 {
-		// 将系统盘放到第0个位置
-		if ret[i].IsSysVolume == 1 {
-			_temp := ret[0]
-			disks[0] = ret[i]
-			disks[i] = _temp
-		}
-	}
-
-	return ret, nil
 }
 
 type SDiskDetails struct {
