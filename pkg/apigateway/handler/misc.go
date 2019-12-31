@@ -35,6 +35,7 @@ import (
 	"yunion.io/x/onecloud/pkg/httperrors"
 	"yunion.io/x/onecloud/pkg/mcclient"
 	"yunion.io/x/onecloud/pkg/mcclient/auth"
+	"yunion.io/x/onecloud/pkg/mcclient/modulebase"
 	"yunion.io/x/onecloud/pkg/mcclient/modules"
 )
 
@@ -49,6 +50,11 @@ const (
 	HOST_IPMI_USERNAME_OPTIONAL = "IPMI用户名"
 	HOST_IPMI_PASSWORD_OPTIONAL = "IPMI密码"
 	HOST_MNG_IP_ADDR_OPTIONAL   = "管理口IP地址"
+)
+
+const (
+	BATCH_USER_REGISTER_QUANTITY_LIMITATION = 1000
+	BATCH_HOST_REGISTER_QUANTITY_LIMITATION = 1000
 )
 
 func FetchSession(ctx context.Context, r *http.Request, apiVersion string) *mcclient.ClientSession {
@@ -188,7 +194,13 @@ func (mh *MiscHandler) DoBatchHostRegister(ctx context.Context, w http.ResponseW
 	}
 
 	// skipped header row
-	for _, row := range xlsx.GetRows("hosts")[1:] {
+	if len(rows) > BATCH_HOST_REGISTER_QUANTITY_LIMITATION {
+		e := httperrors.NewInputParameterError(fmt.Sprintf("beyond limitation. excel file rows must less than %d", BATCH_HOST_REGISTER_QUANTITY_LIMITATION))
+		httperrors.JsonClientError(w, e)
+		return
+	}
+
+	for _, row := range rows[1:] {
 		h = h + strings.Join(row, ",") + "\n"
 	}
 	params := jsonutils.NewDict()
@@ -202,7 +214,7 @@ func (mh *MiscHandler) DoBatchHostRegister(ctx context.Context, w http.ResponseW
 		}
 	}
 
-	resp, err := modules.Hosts.BatchRegister(s, paramKeys, params)
+	submitResult, err := modules.Hosts.BatchRegister(s, paramKeys, params)
 	if err != nil {
 		e := httperrors.NewGeneralError(err)
 		httperrors.JsonClientError(w, e)
@@ -210,7 +222,7 @@ func (mh *MiscHandler) DoBatchHostRegister(ctx context.Context, w http.ResponseW
 	}
 
 	w.WriteHeader(207)
-	appsrv.SendJSON(w, resp)
+	appsrv.SendJSON(w, modulebase.SubmitResults2JSON(submitResult))
 }
 
 func (mh *MiscHandler) DoBatchUserRegister(ctx context.Context, w http.ResponseWriter, req *http.Request) {
@@ -256,8 +268,8 @@ func (mh *MiscHandler) DoBatchUserRegister(ctx context.Context, w http.ResponseW
 		e := httperrors.NewInputParameterError("empty file")
 		httperrors.JsonClientError(w, e)
 		return
-	} else if len(rows) >= 1001 {
-		e := httperrors.NewInputParameterError("beyond limitation.excel file rows must less than 1000")
+	} else if len(rows) > BATCH_USER_REGISTER_QUANTITY_LIMITATION {
+		e := httperrors.NewInputParameterError(fmt.Sprintf("beyond limitation.excel file rows must less than %d", BATCH_USER_REGISTER_QUANTITY_LIMITATION))
 		httperrors.JsonClientError(w, e)
 		return
 	}
