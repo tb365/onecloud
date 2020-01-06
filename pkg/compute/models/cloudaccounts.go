@@ -1753,13 +1753,43 @@ func (account *SCloudaccount) AllowPerformSyncSkus(ctx context.Context, userCred
 	return db.IsAllowPerform(rbacutils.ScopeSystem, userCred, account, "sync-skus")
 }
 
-func (account *SCloudaccount) PerformSyncSkus(ctx context.Context, userCred mcclient.TokenCredential, query jsonutils.JSONObject) (jsonutils.JSONObject, error) {
-	account.SetStatus(userCred, api.CLOUD_REGION_STATUS_INSERVER, "")
-	task, err := taskman.TaskManager.NewTask(ctx, "CloudAccountSyncSkusTask", account, userCred, query.(*jsonutils.JSONDict), "", "", nil)
-	if err != nil {
-		return nil, errors.Wrapf(err, "CloudAccountSyncSkusTask")
+func (account *SCloudaccount) PerformSyncSkus(ctx context.Context, userCred mcclient.TokenCredential, query jsonutils.JSONObject, data jsonutils.JSONObject) (jsonutils.JSONObject, error) {
+	if !account.Enabled {
+		return nil, httperrors.NewInvalidStatusError("Account disabled")
 	}
 
-	task.ScheduleRun(nil)
+	dataDict := data.(*jsonutils.JSONDict)
+	regionObjs, err := data.GetArray("region")
+	if err != nil {
+		return nil, httperrors.NewClientError(err.Error())
+	}
+
+	regions := []string{}
+	keyV := validators.NewModelIdOrNameValidator("region", "cloudregion", account.GetOwnerId())
+	for _, region := range regionObjs {
+		regionData := jsonutils.NewDict()
+		regionData.Set("region_id", region)
+		if err := keyV.Validate(regionData);err != nil {
+			return nil, err
+		} else {
+			regions = append(regions, keyV.Model.GetId())
+		}
+	}
+
+	if len(regions) > 0 {
+		dataDict.Remove("region")
+		// todo: region
+	}
+
+	force, _ := data.Bool("force")
+	if account.CanSync() || force {
+		task, err := taskman.TaskManager.NewTask(ctx, "CloudAccountSyncSkusTask", account, userCred, data.(*jsonutils.JSONDict), "", "", nil)
+		if err != nil {
+			return nil, errors.Wrapf(err, "CloudAccountSyncSkusTask")
+		}
+
+		task.ScheduleRun(nil)
+	}
+
 	return nil, nil
 }
