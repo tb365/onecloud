@@ -451,7 +451,7 @@ func (manager *SDBInstanceSkuManager) newFromCloudSku(ctx context.Context, userC
 	return manager.TableSpec().Insert(sku)
 }
 
-func syncRegionDBInstanceSkus(ctx context.Context, userCred mcclient.TokenCredential, regionId string, isStart bool) {
+func SyncRegionDBInstanceSkus(ctx context.Context, userCred mcclient.TokenCredential, regionId string, isStart bool) {
 	if isStart {
 		q := DBInstanceSkuManager.Query()
 		if len(regionId) > 0 {
@@ -500,5 +500,5 @@ func syncRegionDBInstanceSkus(ctx context.Context, userCred mcclient.TokenCreden
 }
 
 func SyncDBInstanceSkus(ctx context.Context, userCred mcclient.TokenCredential, isStart bool) {
-	syncRegionDBInstanceSkus(ctx, userCred, "", isStart)
+	SyncRegionDBInstanceSkus(ctx, userCred, "", isStart)
 }

@@ -329,23 +329,23 @@ func SyncElasticCacheSkus(ctx context.Context, userCred mcclient.TokenCredential
 		region := &cloudregions[i]
 		meta.SetRegionFilter(region)
 		result := ElasticcacheSkuManager.syncElasticcacheSkus(ctx, userCred, region, meta)
-		notes := fmt.Sprintf("syncElasticCacheSkusByRegion %s result: %s", region.Name, result.Result())
+		notes := fmt.Sprintf("SyncElasticCacheSkusByRegion %s result: %s", region.Name, result.Result())
 		log.Infof(notes)
 	}
 }
 
 // 同步Region elasticcache sku列表.
-func syncElasticCacheSkusByRegion(ctx context.Context, userCred mcclient.TokenCredential, region *SCloudregion) {
+func SyncElasticCacheSkusByRegion(ctx context.Context, userCred mcclient.TokenCredential, region *SCloudregion) error {
 	meta, err := fetchSkuResourcesMeta()
 	if err != nil {
-		log.Errorf("syncElasticCacheSkusByRegion.fetchSkuResourcesMeta %s", err)
-		return
+		return errors.Wrap(err, "SyncElasticCacheSkusByRegion.fetchSkuResourcesMeta")
 	}
 
 	meta.SetRegionFilter(region)
 	result := ElasticcacheSkuManager.syncElasticcacheSkus(ctx, userCred, region, meta)
-	notes := fmt.Sprintf("syncElasticCacheSkusByRegion %s result: %s", region.Name, result.Result())
+	notes := fmt.Sprintf("SyncElasticCacheSkusByRegion %s result: %s", region.Name, result.Result())
 	log.Infof(notes)
+	return nil
 }
 
 // 全量同步sku列表.
@@ -383,14 +383,14 @@ func SyncServerSkus(ctx context.Context, userCred mcclient.TokenCredential, isSt
 }
 
 // 同步指定region sku列表
-func syncServerSkusByRegion(ctx context.Context, userCred mcclient.TokenCredential, region *SCloudregion) error {
+func SyncServerSkusByRegion(ctx context.Context, userCred mcclient.TokenCredential, region *SCloudregion) error {
 	meta, err := fetchSkuResourcesMeta()
 	if err != nil {
-		return errors.Wrap(err, "syncServerSkusByRegion.fetchSkuResourcesMeta")
+		return errors.Wrap(err, "SyncServerSkusByRegion.fetchSkuResourcesMeta")
 	}
 
 	result := ServerSkuManager.syncServerSkus(ctx, userCred, region, meta)
-	notes := fmt.Sprintf("syncServerSkusByRegion %s result: %s", region.Name, result.Result())
+	notes := fmt.Sprintf("SyncServerSkusByRegion %s result: %s", region.Name, result.Result())
 	log.Infof(notes)
 	return nil
 }

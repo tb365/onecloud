@@ -434,3 +434,32 @@ func (manager *SElasticcacheSkuManager) GetPropertyCapability(ctx context.Contex
 
 	return result, nil
 }
+
+func (manager *SElasticcacheSkuManager) PerformActionSync(ctx context.Context, userCred mcclient.TokenCredential, query jsonutils.JSONObject) (jsonutils.JSONObject, error) {
+	data := query.(*jsonutils.JSONDict)
+	cloudprovider := validators.NewModelIdOrNameValidator("cloudprovider", "cloudprovider", nil)
+	cloudregion := validators.NewModelIdOrNameValidator("cloudregion", "cloudregion", nil)
+
+	keyV := map[string]validators.IValidator{
+		"provider":  cloudprovider.Optional(true),
+		"cloudregion":  cloudregion.Optional(true),
+	}
+
+	for _, v := range keyV {
+		if err := v.Validate(data); err != nil {
+			return nil, err
+		}
+	}
+
+	regions := []SCloudregion{}
+	if region, err := data.GetString("cloudregion"); err == nil && len(region) > 0 {
+		regions = append(regions, *cloudregion.Model.(*SCloudregion))
+	} else if provider, err := data.GetString("cloudprovider"); err == nil && len(provider) > 0 {
+		regions, err = CloudregionManager.GetRegionByProvider(provider)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return nil, nil
+}

@@ -1748,3 +1748,18 @@ func guessBrandForHypervisor(hypervisor string) string {
 	}
 	return brands[0]
 }
+
+func (account *SCloudaccount) AllowPerformSyncSkus(ctx context.Context, userCred mcclient.TokenCredential, query jsonutils.JSONObject) bool {
+	return db.IsAllowPerform(rbacutils.ScopeSystem, userCred, account, "sync-skus")
+}
+
+func (account *SCloudaccount) PerformSyncSkus(ctx context.Context, userCred mcclient.TokenCredential, query jsonutils.JSONObject) (jsonutils.JSONObject, error) {
+	account.SetStatus(userCred, api.CLOUD_REGION_STATUS_INSERVER, "")
+	task, err := taskman.TaskManager.NewTask(ctx, "CloudAccountSyncSkusTask", account, userCred, query.(*jsonutils.JSONDict), "", "", nil)
+	if err != nil {
+		return nil, errors.Wrapf(err, "CloudAccountSyncSkusTask")
+	}
+
+	task.ScheduleRun(nil)
+	return nil, nil
+}
