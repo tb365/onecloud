@@ -441,8 +441,8 @@ func (manager *SElasticcacheSkuManager) PerformActionSync(ctx context.Context, u
 	cloudregion := validators.NewModelIdOrNameValidator("cloudregion", "cloudregion", nil)
 
 	keyV := map[string]validators.IValidator{
-		"provider":  cloudprovider.Optional(true),
-		"cloudregion":  cloudregion.Optional(true),
+		"provider":    cloudprovider.Optional(true),
+		"cloudregion": cloudregion.Optional(true),
 	}
 
 	for _, v := range keyV {
