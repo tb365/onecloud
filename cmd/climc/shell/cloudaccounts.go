@@ -780,7 +780,7 @@ func init() {
 
 	type CloudaccountSyncSkusOptions struct {
 		ID       string   `help:"ID or Name of cloud account"`
-		RESOURCE       string   `help:"Resource of skus" choices:"serversku|elasticcachesku|dbinstance_sku"`
+		RESOURCE string   `help:"Resource of skus" choices:"serversku|elasticcachesku|dbinstance_sku"`
 		Force    bool     `help:"Force sync no matter what"`
 		Region   []string `help:"region to sync"`
 	}
