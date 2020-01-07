@@ -1764,7 +1764,7 @@ func (account *SCloudaccount) PerformSyncSkus(ctx context.Context, userCred mccl
 	regionV := validators.NewModelIdOrNameValidator("cloudregion", "cloudregion", account.GetOwnerId())
 	providerV := validators.NewModelIdOrNameValidator("cloudprovider", "cloudprovider", account.GetOwnerId())
 	keyV := map[string]validators.IValidator{
-		"resource": resourceV,
+		"resource":      resourceV,
 		"cloudregion":   regionV.Optional(true),
 		"cloudprovider": providerV.Optional(true),
 	}
@@ -1777,7 +1777,7 @@ func (account *SCloudaccount) PerformSyncSkus(ctx context.Context, userCred mccl
 
 	force, _ := data.Bool("force")
 	if account.CanSync() || force {
-		task, err := taskman.TaskManager.NewTask(ctx, "CloudAccountSyncSkusTask", account, userCred, data.(*jsonutils.JSONDict), "", "", nil)
+		task, err := taskman.TaskManager.NewTask(ctx, "CloudAccountSyncSkusTask", account, userCred, dataDict, "", "", nil)
 		if err != nil {
 			return nil, errors.Wrapf(err, "CloudAccountSyncSkusTask")
 		}
