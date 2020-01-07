@@ -30,7 +30,6 @@ func (self *CloudAccountSyncSkusTask) taskFailed(ctx context.Context, account *m
 func (self *CloudAccountSyncSkusTask) OnInit(ctx context.Context, obj db.IStandaloneModel, body jsonutils.JSONObject) {
 	account := obj.(*models.SCloudaccount)
 
-	var err error
 	regions := []models.SCloudregion{}
 	if regionId, _ := self.GetParams().GetString("cloudregion"); len(regionId) > 0 {
 		_region, err := db.FetchById(models.CloudregionManager, regionId)
@@ -42,10 +41,16 @@ func (self *CloudAccountSyncSkusTask) OnInit(ctx context.Context, obj db.IStanda
 		region := _region.(*models.SCloudregion)
 		regions = append(regions, *region)
 	} else if providerId, _ := self.GetParams().GetString("cloudprovider"); len(providerId) > 0 {
-		regions, err = models.CloudregionManager.GetRegionByProvider(providerId)
+		provider, err := db.FetchById(models.CloudproviderManager, providerId)
 		if err != nil {
 			self.taskFailed(ctx, account, err)
 			return
+		}
+
+		_regions := provider.(*models.SCloudprovider).GetCloudproviderRegions()
+		for i := range _regions {
+			region := _regions[i].GetRegion()
+			regions = append(regions, *region)
 		}
 	} else {
 		providers := account.GetEnabledCloudproviders()
