@@ -45,6 +45,7 @@ import (
 	"yunion.io/x/onecloud/pkg/mcclient"
 	"yunion.io/x/onecloud/pkg/mcclient/auth"
 	"yunion.io/x/onecloud/pkg/mcclient/modules"
+	"yunion.io/x/onecloud/pkg/util/choices"
 	"yunion.io/x/onecloud/pkg/util/logclient"
 	"yunion.io/x/onecloud/pkg/util/rbacutils"
 	"yunion.io/x/onecloud/pkg/util/stringutils2"
@@ -1759,9 +1760,11 @@ func (account *SCloudaccount) PerformSyncSkus(ctx context.Context, userCred mccl
 	}
 
 	dataDict := data.(*jsonutils.JSONDict)
+	resourceV := validators.NewStringChoicesValidator("resource", choices.NewChoices(ServerSkuManager.Keyword(), ElasticcacheSkuManager.Keyword(), DBInstanceSkuManager.Keyword()))
 	regionV := validators.NewModelIdOrNameValidator("cloudregion", "cloudregion", account.GetOwnerId())
 	providerV := validators.NewModelIdOrNameValidator("cloudprovider", "cloudprovider", account.GetOwnerId())
 	keyV := map[string]validators.IValidator{
+		"resource": resourceV,
 		"cloudregion":   regionV.Optional(true),
 		"cloudprovider": providerV.Optional(true),
 	}
