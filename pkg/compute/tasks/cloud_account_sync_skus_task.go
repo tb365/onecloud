@@ -55,13 +55,11 @@ func (self *CloudAccountSyncSkusTask) OnInit(ctx context.Context, obj db.IStanda
 	} else {
 		providers := account.GetEnabledCloudproviders()
 		for _, provider := range providers {
-			_regions, err := models.CloudregionManager.GetRegionByProvider(provider.GetId())
-			if err != nil {
-				self.taskFailed(ctx, account, err)
-				return
+			_regions := provider.GetCloudproviderRegions()
+			for i := range _regions {
+				region := _regions[i].GetRegion()
+				regions = append(regions, *region)
 			}
-
-			regions = append(regions, _regions...)
 		}
 	}
 
