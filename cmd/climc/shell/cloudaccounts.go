@@ -782,6 +782,7 @@ func init() {
 		ID       string   `help:"ID or Name of cloud account"`
 		RESOURCE string   `help:"Resource of skus" choices:"serversku|elasticcachesku|dbinstance_sku"`
 		Force    bool     `help:"Force sync no matter what"`
+		Provider []string `help:"provider to sync"`
 		Region   []string `help:"region to sync"`
 	}
 	R(&CloudaccountSyncSkusOptions{}, "cloud-account-sync-skus", "Sync skus of a cloud account", func(s *mcclient.ClientSession, args *CloudaccountSyncSkusOptions) error {
