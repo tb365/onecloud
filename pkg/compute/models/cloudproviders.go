@@ -1426,18 +1426,3 @@ func (provider *SCloudprovider) GetDetailsStorageClasses(
 	ret.Add(jsonutils.NewStringArray(sc), "storage_classes")
 	return ret, nil
 }
-
-func (provider *SCloudprovider) AllowPerformSyncSkus(ctx context.Context, userCred mcclient.TokenCredential, query jsonutils.JSONObject) bool {
-	return db.IsAllowPerform(rbacutils.ScopeSystem, userCred, provider, "sync-skus")
-}
-
-func (provider *SCloudprovider) PerformSyncSkus(ctx context.Context, userCred mcclient.TokenCredential, query jsonutils.JSONObject) (jsonutils.JSONObject, error) {
-	provider.SetStatus(userCred, api.CLOUD_REGION_STATUS_INSERVER, "")
-	task, err := taskman.TaskManager.NewTask(ctx, "CloudProviderSyncSkusTask", provider, userCred, query.(*jsonutils.JSONDict), "", "", nil)
-	if err != nil {
-		return nil, errors.Wrapf(err, "CloudProviderSyncSkusTask")
-	}
-
-	task.ScheduleRun(nil)
-	return nil, nil
-}

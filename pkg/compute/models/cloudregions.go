@@ -29,12 +29,10 @@ import (
 	api "yunion.io/x/onecloud/pkg/apis/compute"
 	"yunion.io/x/onecloud/pkg/cloudcommon/db"
 	"yunion.io/x/onecloud/pkg/cloudcommon/db/lockman"
-	"yunion.io/x/onecloud/pkg/cloudcommon/db/taskman"
 	"yunion.io/x/onecloud/pkg/cloudprovider"
 	"yunion.io/x/onecloud/pkg/compute/options"
 	"yunion.io/x/onecloud/pkg/httperrors"
 	"yunion.io/x/onecloud/pkg/mcclient"
-	"yunion.io/x/onecloud/pkg/util/rbacutils"
 )
 
 type SCloudregionManager struct {
@@ -761,21 +759,6 @@ func (self *SCloudregion) getMinDataDiskCount() int {
 
 func (self *SCloudregion) getMaxDataDiskCount() int {
 	return options.Options.MaxDataDiskCount
-}
-
-func (provider *SCloudregion) AllowPerformSyncSkus(ctx context.Context, userCred mcclient.TokenCredential, query jsonutils.JSONObject) bool {
-	return db.IsAllowPerform(rbacutils.ScopeSystem, userCred, provider, "sync-skus")
-}
-
-func (self *SCloudregion) PerformSyncSkus(ctx context.Context, userCred mcclient.TokenCredential, query jsonutils.JSONObject) (jsonutils.JSONObject, error) {
-	self.SetStatus(userCred, api.CLOUD_REGION_STATUS_INSERVER, "")
-	task, err := taskman.TaskManager.NewTask(ctx, "CloudRegionSyncSkusTask", self, userCred, query.(*jsonutils.JSONDict), "", "", nil)
-	if err != nil {
-		return nil, errors.Wrapf(err, "CloudRegionSyncSkusTask")
-	}
-
-	task.ScheduleRun(nil)
-	return nil, nil
 }
 
 func (manager *SCloudregionManager) FetchDefaultRegion() *SCloudregion {
