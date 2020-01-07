@@ -1759,25 +1759,17 @@ func (account *SCloudaccount) PerformSyncSkus(ctx context.Context, userCred mccl
 	}
 
 	dataDict := data.(*jsonutils.JSONDict)
-	regionObjs, err := data.GetArray("region")
-	if err != nil {
-		return nil, httperrors.NewClientError(err.Error())
+	regionV := validators.NewModelIdOrNameValidator("cloudregion", "cloudregion", account.GetOwnerId())
+	providerV := validators.NewModelIdOrNameValidator("cloudprovider", "cloudprovider", account.GetOwnerId())
+	keyV := map[string]validators.IValidator{
+		"cloudregion": regionV.Optional(true),
+		"cloudprovider": providerV.Optional(true),
 	}
 
-	regions := jsonutils.NewArray()
-	keyV := validators.NewModelIdOrNameValidator("region", "cloudregion", account.GetOwnerId())
-	for _, region := range regionObjs {
-		regionData := jsonutils.NewDict()
-		regionData.Set("region_id", region)
-		if err := keyV.Validate(regionData); err != nil {
+	for _, v := range keyV {
+		if err := v.Validate(dataDict);err != nil {
 			return nil, err
-		} else {
-			regions.Add(jsonutils.NewString(keyV.Model.GetId()))
 		}
-	}
-
-	if regions.Length() > 0 {
-		dataDict.Set("region", regions)
 	}
 
 	force, _ := data.Bool("force")

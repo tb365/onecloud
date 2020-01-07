@@ -782,8 +782,8 @@ func init() {
 		ID       string   `help:"ID or Name of cloud account"`
 		RESOURCE string   `help:"Resource of skus" choices:"serversku|elasticcachesku|dbinstance_sku"`
 		Force    bool     `help:"Force sync no matter what"`
-		Provider []string `help:"provider to sync"`
-		Region   []string `help:"region to sync"`
+		Provider string `help:"provider to sync"`
+		Region   string `help:"region to sync"`
 	}
 	R(&CloudaccountSyncSkusOptions{}, "cloud-account-sync-skus", "Sync skus of a cloud account", func(s *mcclient.ClientSession, args *CloudaccountSyncSkusOptions) error {
 		params := jsonutils.NewDict()
@@ -791,8 +791,12 @@ func init() {
 			params.Add(jsonutils.JSONTrue, "force")
 		}
 
+		if len(args.Provider) > 0 {
+			params.Add(jsonutils.NewString(args.Provider), "provider")
+		}
+
 		if len(args.Region) > 0 {
-			params.Add(jsonutils.NewStringArray(args.Region), "region")
+			params.Add(jsonutils.NewString(args.Region), "region")
 		}
 
 		result, err := modules.Cloudaccounts.PerformAction(s, args.ID, "sync-skus", params)

@@ -29,30 +29,52 @@ func (self *CloudAccountSyncSkusTask) taskFailed(ctx context.Context, account *m
 
 func (self *CloudAccountSyncSkusTask) OnInit(ctx context.Context, obj db.IStandaloneModel, body jsonutils.JSONObject) {
 	account := obj.(*models.SCloudaccount)
-	providers := account.GetEnabledCloudproviders()
 
-	res, _ := body.GetString("resource")
-	for _, provider := range providers {
-		regions, err := models.CloudregionManager.GetRegionByProvider(provider.GetId())
+	var err error
+	regions := []models.SCloudregion{}
+	if regionId, _ := body.GetString("cloudregion"); len(regionId) > 0 {
+		_region, err := db.FetchById(models.CloudregionManager, regionId)
 		if err != nil {
 			self.taskFailed(ctx, account, err)
+			return
 		}
 
-		for _, region := range regions {
-			switch res {
-			case models.ServerSkuManager.Keyword():
-				if err := models.SyncServerSkusByRegion(ctx, self.GetUserCred(), &region); err != nil {
-					self.taskFailed(ctx, account, err)
-					return
-				}
-			case models.ElasticcacheSkuManager.Keyword():
-				if err := models.SyncElasticCacheSkusByRegion(ctx, self.GetUserCred(), &region); err != nil {
-					self.taskFailed(ctx, account, err)
-					return
-				}
-			case models.ElasticcacheSkuManager.Keyword():
-				models.SyncRegionDBInstanceSkus(ctx, self.GetUserCred(), region.GetId(), false)
+		region := _region.(*models.SCloudregion)
+		regions = append(regions, *region)
+	} else if providerId, _ := body.GetString("cloudprovider"); len(providerId) > 0 {
+		regions, err = models.CloudregionManager.GetRegionByProvider(providerId)
+		if err != nil {
+			self.taskFailed(ctx, account, err)
+			return
+		}
+	} else {
+		providers := account.GetEnabledCloudproviders()
+		for _, provider := range providers {
+			_regions, err := models.CloudregionManager.GetRegionByProvider(provider.GetId())
+			if err != nil {
+				self.taskFailed(ctx, account, err)
+				return
 			}
+
+			regions = append(regions, _regions...)
+		}
+	}
+
+	res, _ := body.GetString("resource")
+	for _, region := range regions {
+		switch res {
+		case models.ServerSkuManager.Keyword():
+			if err := models.SyncServerSkusByRegion(ctx, self.GetUserCred(), &region); err != nil {
+				self.taskFailed(ctx, account, err)
+				return
+			}
+		case models.ElasticcacheSkuManager.Keyword():
+			if err := models.SyncElasticCacheSkusByRegion(ctx, self.GetUserCred(), &region); err != nil {
+				self.taskFailed(ctx, account, err)
+				return
+			}
+		case models.ElasticcacheSkuManager.Keyword():
+			models.SyncRegionDBInstanceSkus(ctx, self.GetUserCred(), region.GetId(), false)
 		}
 	}
 
