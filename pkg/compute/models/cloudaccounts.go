@@ -1762,12 +1762,12 @@ func (account *SCloudaccount) PerformSyncSkus(ctx context.Context, userCred mccl
 	regionV := validators.NewModelIdOrNameValidator("cloudregion", "cloudregion", account.GetOwnerId())
 	providerV := validators.NewModelIdOrNameValidator("cloudprovider", "cloudprovider", account.GetOwnerId())
 	keyV := map[string]validators.IValidator{
-		"cloudregion": regionV.Optional(true),
+		"cloudregion":   regionV.Optional(true),
 		"cloudprovider": providerV.Optional(true),
 	}
 
 	for _, v := range keyV {
-		if err := v.Validate(dataDict);err != nil {
+		if err := v.Validate(dataDict); err != nil {
 			return nil, err
 		}
 	}
