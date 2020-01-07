@@ -31,7 +31,7 @@ func (self *CloudAccountSyncSkusTask) OnInit(ctx context.Context, obj db.IStanda
 	account := obj.(*models.SCloudaccount)
 
 	regions := []models.SCloudregion{}
-	if regionId, _ := self.GetParams().GetString("cloudregion"); len(regionId) > 0 {
+	if regionId, _ := self.GetParams().GetString("cloudregion_id"); len(regionId) > 0 {
 		_region, err := db.FetchById(models.CloudregionManager, regionId)
 		if err != nil {
 			self.taskFailed(ctx, account, err)
@@ -40,7 +40,7 @@ func (self *CloudAccountSyncSkusTask) OnInit(ctx context.Context, obj db.IStanda
 
 		region := _region.(*models.SCloudregion)
 		regions = append(regions, *region)
-	} else if providerId, _ := self.GetParams().GetString("cloudprovider"); len(providerId) > 0 {
+	} else if providerId, _ := self.GetParams().GetString("cloudprovider_id"); len(providerId) > 0 {
 		provider, err := db.FetchById(models.CloudproviderManager, providerId)
 		if err != nil {
 			self.taskFailed(ctx, account, err)
