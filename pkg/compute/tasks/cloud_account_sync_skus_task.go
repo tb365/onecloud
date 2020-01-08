@@ -4,11 +4,13 @@ import (
 	"context"
 
 	"yunion.io/x/jsonutils"
+	"yunion.io/x/pkg/util/compare"
 
 	api "yunion.io/x/onecloud/pkg/apis/compute"
 	"yunion.io/x/onecloud/pkg/cloudcommon/db"
 	"yunion.io/x/onecloud/pkg/cloudcommon/db/taskman"
 	"yunion.io/x/onecloud/pkg/compute/models"
+	"yunion.io/x/onecloud/pkg/mcclient"
 	"yunion.io/x/onecloud/pkg/util/logclient"
 )
 
@@ -64,20 +66,29 @@ func (self *CloudAccountSyncSkusTask) OnInit(ctx context.Context, obj db.IStanda
 	}
 
 	res, _ := self.GetParams().GetString("resource")
+	meta, err := models.FetchSkuResourcesMeta()
+	if err != nil {
+		self.taskFailed(ctx, account, err)
+		return
+	}
+
+	type SyncFunc func(ctx context.Context, userCred mcclient.TokenCredential, region *models.SCloudregion, extSkuMeta *models.SSkuResourcesMeta) compare.SyncResult
+	var syncFunc SyncFunc
 	for _, region := range regions {
 		switch res {
 		case models.ServerSkuManager.Keyword():
-			if err := models.SyncServerSkusByRegion(ctx, self.GetUserCred(), &region); err != nil {
-				self.taskFailed(ctx, account, err)
+			syncFunc = models.ServerSkuManager.SyncServerSkus
+		case models.ElasticcacheSkuManager.Keyword():
+			syncFunc = models.ElasticcacheSkuManager.SyncElasticcacheSkus
+		case models.ElasticcacheSkuManager.Keyword():
+			syncFunc = models.DBInstanceSkuManager.SyncDBInstanceSkus
+		}
+
+		if syncFunc != nil {
+			if result := syncFunc(ctx, self.GetUserCred(), &region, meta);result.IsError() {
+				self.taskFailed(ctx, account, result.AllError())
 				return
 			}
-		case models.ElasticcacheSkuManager.Keyword():
-			if err := models.SyncElasticCacheSkusByRegion(ctx, self.GetUserCred(), &region); err != nil {
-				self.taskFailed(ctx, account, err)
-				return
-			}
-		case models.ElasticcacheSkuManager.Keyword():
-			models.SyncRegionDBInstanceSkus(ctx, self.GetUserCred(), region.GetId(), false)
 		}
 	}
 
