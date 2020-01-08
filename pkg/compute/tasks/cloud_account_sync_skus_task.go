@@ -3,6 +3,7 @@ package tasks
 import (
 	"context"
 
+	"github.com/coredns/coredns/plugin/pkg/log"
 	"yunion.io/x/jsonutils"
 	"yunion.io/x/pkg/util/compare"
 
@@ -85,9 +86,11 @@ func (self *CloudAccountSyncSkusTask) OnInit(ctx context.Context, obj db.IStanda
 		}
 
 		if syncFunc != nil {
-			if result := syncFunc(ctx, self.GetUserCred(), &region, meta);result.IsError() {
+			if result := syncFunc(ctx, self.GetUserCred(), &region, meta); result.IsError() {
 				self.taskFailed(ctx, account, result.AllError())
 				return
+			} else {
+				log.Info(result.Result())
 			}
 		}
 	}
