@@ -744,8 +744,9 @@ func (manager *SServerSkuManager) ListItemFilter(ctx context.Context, q *sqlchem
 
 	if domian_id, _ := data.GetString("domain_id"); len(domian_id) > 0 {
 		data.Remove("domain_id")
-		sq := getDomainManagerSubq(domian_id)
-		q = q.In("provider", sq.Query(sq.Field("provider")))
+		q2 := getDomainManagerSubq(domian_id)
+		sq := q2.Query(q2.Field("provider")).SubQuery()
+		q = q.In("provider", sq)
 	}
 
 	if data.Contains("zone") {
