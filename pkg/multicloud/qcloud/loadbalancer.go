@@ -311,6 +311,11 @@ func (self *SLoadbalancer) GetILoadBalancerListeners() ([]cloudprovider.ICloudLo
 }
 
 func (self *SLoadbalancer) GetILoadBalancerBackendGroups() ([]cloudprovider.ICloudLoadbalancerBackendGroup, error) {
+	if self.Forward == LB_TYPE_CLASSIC {
+		bg := SLBBackendGroup{lb: self}
+		return []cloudprovider.ICloudLoadbalancerBackendGroup{&bg}, nil
+	}
+
 	listeners, err := self.GetLoadbalancerListeners("")
 	if err != nil {
 		return nil, err
