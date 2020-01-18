@@ -448,14 +448,9 @@ func (self *SElasticcacheAccount) AllowGetDetailsLoginInfo(ctx context.Context, 
 }
 
 func (self *SElasticcacheAccount) GetDetailsLoginInfo(ctx context.Context, userCred mcclient.TokenCredential, query jsonutils.JSONObject) (jsonutils.JSONObject, error) {
-	password, err := self.GetDecodedPassword()
-	if err != nil {
-		return nil, err
-	}
-
 	ret := jsonutils.NewDict()
 	ret.Add(jsonutils.NewString(self.Name), "username")
-	ret.Add(jsonutils.NewString(password), "password")
+	ret.Add(jsonutils.NewString(self.Password), "password")
 	return ret, nil
 }
 
