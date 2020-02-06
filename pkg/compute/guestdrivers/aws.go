@@ -152,12 +152,14 @@ func (self *SAwsGuestDriver) ValidateCreateData(ctx context.Context, userCred mc
 		if len(input.Networks) > 0 {
 			inetwork, err := db.FetchByIdOrName(models.NetworkManager, userCred, input.Networks[0].Network)
 			if err != nil {
-				return nil, err
+				return nil, errors.Wrap(err, "SAwsGuestDriver.ValidateCreateData.Networks.FetchByIdOrName")
 			}
 
-			support_eip := inetwork.(*models.SNetwork).GetMetadataJson("support_eip", nil)
-			if ok, _ := support_eip.Bool(); !ok {
-				return nil, httperrors.NewInputParameterError("network %s associated route table has no internet gateway attached.", inetwork.GetName())
+			support_eip := inetwork.(*models.SNetwork).GetMetadataJson("ext:support_eip", nil)
+			if support_eip != nil {
+				if ok, _ := support_eip.Bool(); !ok {
+					return nil, httperrors.NewInputParameterError("network %s associated route table has no internet gateway attached.", inetwork.GetName())
+				}
 			}
 		}
 	}
