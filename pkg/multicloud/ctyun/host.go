@@ -167,7 +167,19 @@ func (self *SHost) CreateVM(desc *cloudprovider.SManagedVMCreateConfig) (cloudpr
 		return nil, errors.Wrap(err, "Host.CreateVM.GetNetwork")
 	}
 
-	jobId, err := self.zone.region.CreateInstance(self.zone.GetId(), desc.Name, desc.ExternalImageId, desc.OsType, desc.SysDisk.StorageType, desc.InstanceType, network.VpcID, desc.ExternalNetworkId, desc.ExternalSecgroupId, desc.Password)
+	//  镜像及硬盘配置
+	img, err := self.zone.region.GetImage(desc.ExternalImageId)
+	if err != nil {
+		return nil, errors.Wrap(err, "SHost.CreateVM.GetImage")
+	}
+
+	minRootDiskSize := int(img.MinDisk)
+	rootDiskSize := desc.SysDisk.SizeGB
+	if  minRootDiskSize > rootDiskSize {
+		rootDiskSize = minRootDiskSize
+	}
+
+	jobId, err := self.zone.region.CreateInstance(self.zone.GetId(), desc.Name, desc.ExternalImageId, desc.OsType, desc.InstanceType, network.VpcID, desc.ExternalNetworkId, desc.ExternalSecgroupId, desc.Password, desc.SysDisk.StorageType, minRootDiskSize, desc.DataDisks)
 	if err != nil {
 		return nil, errors.Wrap(err, "Host.CreateVM.CreateInstance")
 	}
