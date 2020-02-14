@@ -1352,7 +1352,7 @@ func updateUserData(region *SRegion, userData, imageId string, osType, username,
 		if err != nil {
 			return "", errors.Wrap(err, "updateUserData.updateWindowsUserData")
 		}
-		return base64.StdEncoding.EncodeToString([]byte(userData)), nil
+		return userData, nil
 	} else {
 		return config.UserDataBase64(), nil
 	}
