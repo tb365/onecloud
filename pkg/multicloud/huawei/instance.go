@@ -1348,8 +1348,12 @@ func updateUserData(userData, osType, username, password, publicKey string) (str
 	}
 
 	if strings.ToLower(osType) == strings.ToLower(osprofile.OS_TYPE_WINDOWS) {
-		shells := []byte(config.UserDataPowerShell())
-		return base64.StdEncoding.EncodeToString(shells), nil
+		shells := config.UserDataPowerShell()
+		if !strings.HasPrefix(shells, "#ps1") {
+			shells = fmt.Sprintf("#ps1\ns", shells)
+		}
+
+		return base64.StdEncoding.EncodeToString([]byte(shells)), nil
 	} else {
 		return config.UserDataBase64(), nil
 	}

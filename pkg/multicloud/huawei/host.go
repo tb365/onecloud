@@ -183,6 +183,10 @@ func (self *SHost) GetInstanceById(instanceId string) (*SInstance, error) {
 func (self *SHost) CreateVM(desc *cloudprovider.SManagedVMCreateConfig) (cloudprovider.ICloudVM, error) {
 	userdata := desc.UserData
 	if strings.ToLower(desc.OsType) == strings.ToLower(osprofile.OS_TYPE_WINDOWS) {
+		if !strings.HasPrefix(userdata, "#ps1") {
+			userdata = fmt.Sprintf("#ps1\ns", userdata)
+		}
+
 		userdata = base64.StdEncoding.EncodeToString([]byte(userdata))
 	}
 
