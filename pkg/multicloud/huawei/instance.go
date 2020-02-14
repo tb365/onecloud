@@ -531,7 +531,7 @@ func (self *SInstance) RebuildRoot(ctx context.Context, desc *cloudprovider.SMan
 		}
 	}
 
-	userData, err := updateUserData(self.OSEXTSRVATTRUserData, desc.OsType, desc.Account, desc.Password, desc.PublicKey)
+	userData, err := updateUserData(self.host.zone.region, self.OSEXTSRVATTRUserData, desc.ImageId, desc.OsType, desc.Account, desc.Password, desc.PublicKey)
 	if err != nil {
 		return "", errors.Wrap(err, "SInstance.RebuildRoot.updateUserData")
 	}
@@ -1317,7 +1317,7 @@ func (self *SInstance) GetError() error {
 	return nil
 }
 
-func updateUserData(userData, osType, username, password, publicKey string) (string, error) {
+func updateUserData(region *SRegion, userData, imageId string, osType, username, password, publicKey string) (string, error) {
 	config := &cloudinit.SCloudConfig{}
 	if strings.ToLower(osType) == strings.ToLower(osprofile.OS_TYPE_WINDOWS) {
 		if _config, err := cloudinit.ParseUserDataBase64(userData); err == nil {
@@ -1348,13 +1348,42 @@ func updateUserData(userData, osType, username, password, publicKey string) (str
 	}
 
 	if strings.ToLower(osType) == strings.ToLower(osprofile.OS_TYPE_WINDOWS) {
-		shells := config.UserDataPowerShell()
-		if !strings.HasPrefix(shells, "#ps1") {
-			shells = fmt.Sprintf("#ps1\n%s", shells)
+		userData, err := updateWindowsUserData(region, config.UserDataPowerShell(), imageId, username, password)
+		if err != nil {
+			return "", errors.Wrap(err, "updateUserData.updateWindowsUserData")
 		}
-
-		return base64.StdEncoding.EncodeToString([]byte(shells)), nil
+		return base64.StdEncoding.EncodeToString([]byte(userData)), nil
 	} else {
 		return config.UserDataBase64(), nil
 	}
+}
+
+func updateWindowsUserData(region *SRegion, userData string, imageId string, username, password string) (string, error) {
+	// Windows Server 2003, Windows Vista, Windows Server 2008, Windows Server 2003 R2, Windows Server 2000, Windows Server 2012, Windows Server 2003 with SP1, Windows 8
+	image, err := region.GetImage(imageId)
+	if err != nil {
+		return "", errors.Wrap(err, "updateUserData.GetImage")
+	}
+
+	oldVersions := []string{"2000", "2003", "2008", "2012", "Vista"}
+	isOldVersion := false
+	for i := range oldVersions {
+		if strings.Contains(image.OSVersion, oldVersions[i]) {
+			isOldVersion = true
+		}
+	}
+
+	shells := ""
+	if isOldVersion {
+		shells += fmt.Sprintf("#ps1\n")
+		shells += fmt.Sprintf("net user %s %s/add\n", username, password)
+		shells += fmt.Sprintf("net localgroup administrators %s /add\n", username)
+		shells += fmt.Sprintf("net user %s /active:yes", username)
+	} else {
+		if !strings.HasPrefix(userData, "#ps1") {
+			shells = fmt.Sprintf("#ps1\n%s", userData)
+		}
+	}
+
+	return base64.StdEncoding.EncodeToString([]byte(shells)), nil
 }
