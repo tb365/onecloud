@@ -16,12 +16,12 @@ package huawei
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
-
 	"yunion.io/x/jsonutils"
 	"yunion.io/x/log"
 	"yunion.io/x/pkg/errors"
@@ -518,7 +518,6 @@ func (self *SInstance) UpdateUserData(userData string) error {
 // https://support.huaweicloud.com/api-ecs/zh-cn_topic_0067876349.html 使用原镜像重装
 // https://support.huaweicloud.com/api-ecs/zh-cn_topic_0067876971.html 更换系统盘操作系统
 // 不支持调整系统盘大小
-// todo: 支持注入user_data
 func (self *SInstance) RebuildRoot(ctx context.Context, desc *cloudprovider.SManagedVMRebuildRootConfig) (string, error) {
 	var err error
 	var jobId string
@@ -531,13 +530,18 @@ func (self *SInstance) RebuildRoot(ctx context.Context, desc *cloudprovider.SMan
 		}
 	}
 
+	userData, err := updateUserData(self.OSEXTSRVATTRUserData, desc.OsType, desc.Account, desc.Password, desc.PublicKey);
+	if  err != nil {
+		return "", errors.Wrap(err, "SInstance.RebuildRoot.updateUserData")
+	}
+
 	if self.Metadata.MeteringImageID == desc.ImageId {
-		jobId, err = self.host.zone.region.RebuildRoot(ctx, self.UserID, self.GetId(), desc.Password, publicKeyName, desc.PublicKey, self.OSEXTSRVATTRUserData)
+		jobId, err = self.host.zone.region.RebuildRoot(ctx, self.UserID, self.GetId(), desc.Account, desc.Password, publicKeyName, desc.PublicKey, userData)
 		if err != nil {
 			return "", err
 		}
 	} else {
-		jobId, err = self.host.zone.region.ChangeRoot(ctx, self.UserID, self.GetId(), desc.ImageId, desc.Password, publicKeyName, desc.PublicKey, self.OSEXTSRVATTRUserData)
+		jobId, err = self.host.zone.region.ChangeRoot(ctx, self.UserID, self.GetId(), desc.ImageId, desc.Account, desc.Password, publicKeyName, desc.PublicKey, userData)
 		if err != nil {
 			return "", err
 		}
@@ -1049,7 +1053,7 @@ func (self *SRegion) UpdateVM(instanceId, name string) error {
 
 // https://support.huaweicloud.com/api-ecs/zh-cn_topic_0067876349.html
 // 返回job id
-func (self *SRegion) RebuildRoot(ctx context.Context, userId, instanceId, passwd, publicKeyName, publicKey, userData string) (string, error) {
+func (self *SRegion) RebuildRoot(ctx context.Context, userId, instanceId, username, passwd, publicKeyName, publicKey, userData string) (string, error) {
 	params := jsonutils.NewDict()
 	reinstallObj := jsonutils.NewDict()
 
@@ -1062,13 +1066,9 @@ func (self *SRegion) RebuildRoot(ctx context.Context, userId, instanceId, passwd
 	}
 
 	if len(userData) > 0 {
-		if udata, err := updateUserData(userData, "root", passwd, publicKey); err == nil {
-			meta := jsonutils.NewDict()
-			meta.Add(jsonutils.NewString(udata), "user_data")
-			reinstallObj.Add(meta, "metadata")
-		} else {
-			return "", errors.Wrap(err, "region.RebuildRoot.UpdateUserData")
-		}
+		meta := jsonutils.NewDict()
+		meta.Add(jsonutils.NewString(userData), "user_data")
+		reinstallObj.Add(meta, "metadata")
 	}
 
 	if len(userId) > 0 {
@@ -1086,7 +1086,7 @@ func (self *SRegion) RebuildRoot(ctx context.Context, userId, instanceId, passwd
 
 // https://support.huaweicloud.com/api-ecs/zh-cn_topic_0067876971.html
 // 返回job id
-func (self *SRegion) ChangeRoot(ctx context.Context, userId, instanceId, imageId, passwd, publicKeyName, publicKey, userData string) (string, error) {
+func (self *SRegion) ChangeRoot(ctx context.Context, userId, instanceId, imageId, username, passwd, publicKeyName, publicKey, userData string) (string, error) {
 	params := jsonutils.NewDict()
 	changeOsObj := jsonutils.NewDict()
 
@@ -1099,13 +1099,9 @@ func (self *SRegion) ChangeRoot(ctx context.Context, userId, instanceId, imageId
 	}
 
 	if len(userData) > 0 {
-		if udata, err := updateUserData(userData, "root", passwd, publicKey); err == nil {
-			meta := jsonutils.NewDict()
-			meta.Add(jsonutils.NewString(udata), "user_data")
-			changeOsObj.Add(meta, "metadata")
-		} else {
-			return "", errors.Wrap(err, "region.ChangeRoot.UpdateUserData")
-		}
+		meta := jsonutils.NewDict()
+		meta.Add(jsonutils.NewString(userData), "user_data")
+		changeOsObj.Add(meta, "metadata")
 	}
 
 	if len(userId) > 0 {
@@ -1320,15 +1316,19 @@ func (self *SInstance) GetError() error {
 	return nil
 }
 
-func updateUserData(userData, username, password, publicKey string) (string, error) {
-	var config *cloudinit.SCloudConfig
-	var err error
-	if len(userData) == 0 {
-		config = &cloudinit.SCloudConfig{}
+func updateUserData(userData, osType, username, password, publicKey string) (string, error) {
+	config := &cloudinit.SCloudConfig{}
+	if strings.ToLower(osType) == strings.ToLower(osprofile.OS_TYPE_WINDOWS) {
+		if _config, err := cloudinit.ParseUserDataBase64(userData);err == nil {
+			config = _config
+		} else {
+			log.Debugf("updateWindowsUserData invalid userdata %s", userData)
+		}
 	} else {
-		config, err = cloudinit.ParseUserDataBase64(userData)
-		if err != nil {
-			return "", fmt.Errorf("invalid userdata %s", userData)
+		if _config, err := cloudinit.ParseUserDataBase64(userData); err == nil {
+			config = _config
+		} else {
+			return "", fmt.Errorf("updateLinuxUserData invalid userdata %s", userData)
 		}
 	}
 
@@ -1346,5 +1346,10 @@ func updateUserData(userData, username, password, publicKey string) (string, err
 		config.MergeUser(user)
 	}
 
-	return config.UserDataBase64(), nil
+	if strings.ToLower(osType) == strings.ToLower(osprofile.OS_TYPE_WINDOWS) {
+		shells := []byte(config.UserDataPowerShell())
+		return base64.StdEncoding.EncodeToString(shells), nil
+	} else {
+		return config.UserDataBase64(), nil
+	}
 }
