@@ -830,20 +830,7 @@ func (self *SRegion) CreateInstance(name string, imageId string, instanceType st
 	}
 
 	if len(userData) > 0 {
-		pwd := ""
-		k := ""
-		if len(keypair) > 0 {
-			k = publicKey
-		} else {
-			pwd = passwd
-		}
-
-		udata, err := updateUserData(userData, "root", pwd, k)
-		if err != nil {
-			return "", errors.Wrap(err, "region.CreateInstance.UpdateUserData")
-		}
-
-		params.UserData = udata
+		params.UserData = userData
 	}
 
 	serverObj := jsonutils.Marshal(params)
