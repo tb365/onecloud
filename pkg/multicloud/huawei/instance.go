@@ -531,18 +531,23 @@ func (self *SInstance) RebuildRoot(ctx context.Context, desc *cloudprovider.SMan
 		}
 	}
 
-	userData, err := updateUserData(self.host.zone.region, self.OSEXTSRVATTRUserData, desc.ImageId, desc.OsType, desc.Account, desc.Password, desc.PublicKey)
+	image, err := self.host.zone.region.GetImage(desc.ImageId)
+	if err != nil {
+		return "", errors.Wrap(err, "updateUserData.GetImage")
+	}
+
+	userData, err := updateUserData(self.OSEXTSRVATTRUserData, image.OSVersion, desc.Account, desc.Password, desc.PublicKey)
 	if err != nil {
 		return "", errors.Wrap(err, "SInstance.RebuildRoot.updateUserData")
 	}
 
 	if self.Metadata.MeteringImageID == desc.ImageId {
-		jobId, err = self.host.zone.region.RebuildRoot(ctx, self.UserID, self.GetId(), desc.Account, desc.Password, publicKeyName, desc.PublicKey, userData)
+		jobId, err = self.host.zone.region.RebuildRoot(ctx, self.UserID, self.GetId(), desc.Password, publicKeyName, userData)
 		if err != nil {
 			return "", err
 		}
 	} else {
-		jobId, err = self.host.zone.region.ChangeRoot(ctx, self.UserID, self.GetId(), desc.ImageId, desc.Account, desc.Password, publicKeyName, desc.PublicKey, userData)
+		jobId, err = self.host.zone.region.ChangeRoot(ctx, self.UserID, self.GetId(), desc.ImageId, desc.Password, publicKeyName, userData)
 		if err != nil {
 			return "", err
 		}
@@ -1054,7 +1059,7 @@ func (self *SRegion) UpdateVM(instanceId, name string) error {
 
 // https://support.huaweicloud.com/api-ecs/zh-cn_topic_0067876349.html
 // 返回job id
-func (self *SRegion) RebuildRoot(ctx context.Context, userId, instanceId, username, passwd, publicKeyName, publicKey, userData string) (string, error) {
+func (self *SRegion) RebuildRoot(ctx context.Context, userId, instanceId, passwd, publicKeyName, userData string) (string, error) {
 	params := jsonutils.NewDict()
 	reinstallObj := jsonutils.NewDict()
 
@@ -1087,7 +1092,7 @@ func (self *SRegion) RebuildRoot(ctx context.Context, userId, instanceId, userna
 
 // https://support.huaweicloud.com/api-ecs/zh-cn_topic_0067876971.html
 // 返回job id
-func (self *SRegion) ChangeRoot(ctx context.Context, userId, instanceId, imageId, username, passwd, publicKeyName, publicKey, userData string) (string, error) {
+func (self *SRegion) ChangeRoot(ctx context.Context, userId, instanceId, imageId, passwd, publicKeyName, userData string) (string, error) {
 	params := jsonutils.NewDict()
 	changeOsObj := jsonutils.NewDict()
 
@@ -1317,9 +1322,10 @@ func (self *SInstance) GetError() error {
 	return nil
 }
 
-func updateUserData(region *SRegion, userData, imageId string, osType, username, password, publicKey string) (string, error) {
+func updateUserData(userData, osVersion, username, password, publicKey string) (string, error) {
+	winOS := strings.ToLower(osprofile.OS_TYPE_WINDOWS)
 	config := &cloudinit.SCloudConfig{}
-	if strings.ToLower(osType) == strings.ToLower(osprofile.OS_TYPE_WINDOWS) {
+	if strings.Contains(osVersion, winOS)  {
 		if _config, err := cloudinit.ParseUserDataBase64(userData); err == nil {
 			config = _config
 		} else {
@@ -1347,8 +1353,8 @@ func updateUserData(region *SRegion, userData, imageId string, osType, username,
 		config.MergeUser(user)
 	}
 
-	if strings.ToLower(osType) == strings.ToLower(osprofile.OS_TYPE_WINDOWS) {
-		userData, err := updateWindowsUserData(region, config.UserDataPowerShell(), imageId, username, password)
+	if strings.Contains(osVersion, winOS) {
+		userData, err := updateWindowsUserData(config.UserDataPowerShell(), osVersion, username, password)
 		if err != nil {
 			return "", errors.Wrap(err, "updateUserData.updateWindowsUserData")
 		}
@@ -1358,17 +1364,12 @@ func updateUserData(region *SRegion, userData, imageId string, osType, username,
 	}
 }
 
-func updateWindowsUserData(region *SRegion, userData string, imageId string, username, password string) (string, error) {
+func updateWindowsUserData(userData string, osVersion string, username, password string) (string, error) {
 	// Windows Server 2003, Windows Vista, Windows Server 2008, Windows Server 2003 R2, Windows Server 2000, Windows Server 2012, Windows Server 2003 with SP1, Windows 8
-	image, err := region.GetImage(imageId)
-	if err != nil {
-		return "", errors.Wrap(err, "updateUserData.GetImage")
-	}
-
 	oldVersions := []string{"2000", "2003", "2008", "2012", "Vista"}
 	isOldVersion := false
 	for i := range oldVersions {
-		if strings.Contains(image.OSVersion, oldVersions[i]) {
+		if strings.Contains(osVersion, oldVersions[i]) {
 			isOldVersion = true
 		}
 	}
