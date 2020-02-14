@@ -1324,7 +1324,7 @@ func (self *SInstance) GetError() error {
 
 func updateUserData(userData, osVersion, username, password, publicKey string) (string, error) {
 	winOS := strings.ToLower(osprofile.OS_TYPE_WINDOWS)
-	osVersion := strings.ToLower(osVersion)
+	osVersion = strings.ToLower(osVersion)
 	config := &cloudinit.SCloudConfig{}
 	if strings.Contains(osVersion, winOS)  {
 		if _config, err := cloudinit.ParseUserDataBase64(userData); err == nil {
