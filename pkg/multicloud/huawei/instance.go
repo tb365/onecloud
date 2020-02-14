@@ -22,6 +22,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
 	"yunion.io/x/jsonutils"
 	"yunion.io/x/log"
 	"yunion.io/x/pkg/errors"
@@ -530,8 +531,8 @@ func (self *SInstance) RebuildRoot(ctx context.Context, desc *cloudprovider.SMan
 		}
 	}
 
-	userData, err := updateUserData(self.OSEXTSRVATTRUserData, desc.OsType, desc.Account, desc.Password, desc.PublicKey);
-	if  err != nil {
+	userData, err := updateUserData(self.OSEXTSRVATTRUserData, desc.OsType, desc.Account, desc.Password, desc.PublicKey)
+	if err != nil {
 		return "", errors.Wrap(err, "SInstance.RebuildRoot.updateUserData")
 	}
 
@@ -1319,7 +1320,7 @@ func (self *SInstance) GetError() error {
 func updateUserData(userData, osType, username, password, publicKey string) (string, error) {
 	config := &cloudinit.SCloudConfig{}
 	if strings.ToLower(osType) == strings.ToLower(osprofile.OS_TYPE_WINDOWS) {
-		if _config, err := cloudinit.ParseUserDataBase64(userData);err == nil {
+		if _config, err := cloudinit.ParseUserDataBase64(userData); err == nil {
 			config = _config
 		} else {
 			log.Debugf("updateWindowsUserData invalid userdata %s", userData)

@@ -15,7 +15,11 @@
 package huawei
 
 import (
+	"encoding/base64"
 	"fmt"
+	"strings"
+
+	"yunion.io/x/pkg/util/osprofile"
 
 	"yunion.io/x/jsonutils"
 	"yunion.io/x/log"
@@ -177,6 +181,11 @@ func (self *SHost) GetInstanceById(instanceId string) (*SInstance, error) {
 }
 
 func (self *SHost) CreateVM(desc *cloudprovider.SManagedVMCreateConfig) (cloudprovider.ICloudVM, error) {
+	userdata := desc.UserData
+	if strings.ToLower(desc.OsType) == strings.ToLower(osprofile.OS_TYPE_WINDOWS) {
+		userdata = base64.StdEncoding.EncodeToString([]byte(userdata))
+	}
+
 	vmId, err := self._createVM(desc.Name, desc.ExternalImageId, desc.SysDisk, desc.Cpu, desc.MemoryMB, desc.InstanceType, desc.ExternalNetworkId, desc.IpAddr, desc.Description, desc.Password, desc.DataDisks, desc.PublicKey, desc.ExternalSecgroupId, desc.UserData, desc.BillingCycle)
 	if err != nil {
 		return nil, err
