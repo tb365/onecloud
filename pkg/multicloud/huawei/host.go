@@ -186,7 +186,7 @@ func (self *SHost) CreateVM(desc *cloudprovider.SManagedVMCreateConfig) (cloudpr
 		userdata = base64.StdEncoding.EncodeToString([]byte(userdata))
 	}
 
-	vmId, err := self._createVM(desc.Name, desc.ExternalImageId, desc.SysDisk, desc.Cpu, desc.MemoryMB, desc.InstanceType, desc.ExternalNetworkId, desc.IpAddr, desc.Description, desc.Password, desc.DataDisks, desc.PublicKey, desc.ExternalSecgroupId, desc.UserData, desc.BillingCycle)
+	vmId, err := self._createVM(desc.Name, desc.ExternalImageId, desc.SysDisk, desc.Cpu, desc.MemoryMB, desc.InstanceType, desc.ExternalNetworkId, desc.IpAddr, desc.Description, desc.Password, desc.DataDisks, desc.PublicKey, desc.ExternalSecgroupId, userdata, desc.BillingCycle)
 	if err != nil {
 		return nil, err
 	}
