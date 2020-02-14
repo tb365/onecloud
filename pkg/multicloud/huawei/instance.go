@@ -1376,7 +1376,7 @@ func updateWindowsUserData(region *SRegion, userData string, imageId string, use
 	shells := ""
 	if isOldVersion {
 		shells += fmt.Sprintf("#ps1\n")
-		shells += fmt.Sprintf("net user %s %s/add\n", username, password)
+		shells += fmt.Sprintf("net user %s %s /add\n", username, password)
 		shells += fmt.Sprintf("net localgroup administrators %s /add\n", username)
 		shells += fmt.Sprintf("net user %s /active:yes", username)
 	} else {
