@@ -533,7 +533,12 @@ func (self *SInstance) RebuildRoot(ctx context.Context, desc *cloudprovider.SMan
 
 	image, err := self.host.zone.region.GetImage(desc.ImageId)
 	if err != nil {
-		return "", errors.Wrap(err, "updateUserData.GetImage")
+		return "", errors.Wrap(err, "SInstance.RebuildRoot.GetImage")
+	}
+
+	// Password存在的情况下，windows 系统直接使用密码
+	if strings.ToLower(image.Platform) == strings.ToLower(osprofile.OS_TYPE_WINDOWS) && len(desc.Password) > 0 {
+		publicKeyName = ""
 	}
 
 	userData, err := updateUserData(self.OSEXTSRVATTRUserData, image.OSVersion, desc.Account, desc.Password, desc.PublicKey)
