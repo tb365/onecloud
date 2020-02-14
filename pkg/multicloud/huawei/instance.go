@@ -1053,32 +1053,22 @@ func (self *SRegion) RebuildRoot(ctx context.Context, userId, instanceId, passwd
 	params := jsonutils.NewDict()
 	reinstallObj := jsonutils.NewDict()
 
-	var udata string
-	var err error
 	if len(publicKeyName) > 0 {
 		reinstallObj.Add(jsonutils.NewString(publicKeyName), "keyname")
-
-		if len(userData) > 0 {
-			if udata, err = updateUserData(userData, "root", "", publicKey); err != nil {
-				return "", errors.Wrap(err, "region.RebuildRoot.UpdateUserData set root publicKey")
-			}
-		}
 	} else if len(passwd) > 0 {
 		reinstallObj.Add(jsonutils.NewString(passwd), "adminpass")
-
-		if len(userData) > 0 {
-			if udata, err = updateUserData(userData, "root", passwd, ""); err != nil {
-				return "", errors.Wrap(err, "region.RebuildRoot.UpdateUserData set root password")
-			}
-		}
 	} else {
 		return "", fmt.Errorf("both password and publicKey are empty.")
 	}
 
-	if len(udata) > 0 {
-		meta := jsonutils.NewDict()
-		meta.Add(jsonutils.NewString(udata), "user_data")
-		reinstallObj.Add(meta, "metadata")
+	if len(userData) > 0 {
+		if udata, err := updateUserData(userData, "root", passwd, publicKey); err == nil {
+			meta := jsonutils.NewDict()
+			meta.Add(jsonutils.NewString(udata), "user_data")
+			reinstallObj.Add(meta, "metadata")
+		} else {
+			return "", errors.Wrap(err, "region.RebuildRoot.UpdateUserData")
+		}
 	}
 
 	if len(userId) > 0 {
@@ -1100,32 +1090,22 @@ func (self *SRegion) ChangeRoot(ctx context.Context, userId, instanceId, imageId
 	params := jsonutils.NewDict()
 	changeOsObj := jsonutils.NewDict()
 
-	var udata string
-	var err error
 	if len(publicKeyName) > 0 {
 		changeOsObj.Add(jsonutils.NewString(publicKeyName), "keyname")
-
-		if len(userData) > 0 {
-			if udata, err = updateUserData(userData, "root", "", publicKey); err != nil {
-				return "", errors.Wrap(err, "region.ChangeRoot.UpdateUserData set root publicKey")
-			}
-		}
 	} else if len(passwd) > 0 {
 		changeOsObj.Add(jsonutils.NewString(passwd), "adminpass")
-
-		if len(userData) > 0 {
-			if udata, err = updateUserData(userData, "root", passwd, ""); err != nil {
-				return "", errors.Wrap(err, "region.ChangeRoot.UpdateUserData set root password")
-			}
-		}
 	} else {
 		return "", fmt.Errorf("both password and publicKey are empty.")
 	}
 
-	if len(udata) > 0 {
-		meta := jsonutils.NewDict()
-		meta.Add(jsonutils.NewString(udata), "user_data")
-		changeOsObj.Add(meta, "metadata")
+	if len(userData) > 0 {
+		if udata, err := updateUserData(userData, "root", passwd, publicKey); err == nil {
+			meta := jsonutils.NewDict()
+			meta.Add(jsonutils.NewString(udata), "user_data")
+			changeOsObj.Add(meta, "metadata")
+		} else {
+			return "", errors.Wrap(err, "region.ChangeRoot.UpdateUserData")
+		}
 	}
 
 	if len(userId) > 0 {
@@ -1341,14 +1321,22 @@ func (self *SInstance) GetError() error {
 }
 
 func updateUserData(userData, username, password, publicKey string) (string, error) {
-	config, err := cloudinit.ParseUserDataBase64(userData)
-	if err != nil {
-		return "", fmt.Errorf("invalid userdata %s", userData)
+	var config *cloudinit.SCloudConfig
+	var err error
+	if len(userData) == 0 {
+		config = &cloudinit.SCloudConfig{}
+	} else {
+		config, err = cloudinit.ParseUserDataBase64(userData)
+		if err != nil {
+			return "", fmt.Errorf("invalid userdata %s", userData)
+		}
 	}
 
 	user := cloudinit.NewUser(username)
 	config.RemoveUser(user)
+	config.DisableRoot = 0
 	if len(password) > 0 {
+		config.SshPwauth = cloudinit.SSH_PASSWORD_AUTH_ON
 		user.Password(password)
 		config.MergeUser(user)
 	}
