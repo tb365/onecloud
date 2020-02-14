@@ -112,11 +112,6 @@ func (self *SHuaweiGuestDriver) GetGuestInitialStateAfterRebuild() string {
 
 func (self *SHuaweiGuestDriver) GetLinuxDefaultAccount(desc cloudprovider.SManagedVMCreateConfig) string {
 	userName := "root"
-	if desc.ImageType == "system" {
-		if desc.OsDistribution == "Ubuntu" {
-			userName = "ubuntu"
-		}
-	}
 	if desc.OsType == "Windows" {
 		userName = "Administrator"
 	}
