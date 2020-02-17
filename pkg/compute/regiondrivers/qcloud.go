@@ -593,6 +593,48 @@ func (self *SQcloudRegionDriver) RequestCreateLoadbalancerListener(ctx context.C
 	return nil
 }
 
+func (self *SQcloudRegionDriver) GetLoadbalancerListenerRuleInputParams(lblis *models.SLoadbalancerListener, lbr *models.SLoadbalancerListenerRule) *cloudprovider.SLoadbalancerListenerRule {
+	scheduler := ""
+	switch lblis.Scheduler {
+	case api.LB_SCHEDULER_WRR:
+		scheduler = "WRR"
+	case api.LB_SCHEDULER_WLC:
+		scheduler = "LEAST_CONN"
+	case api.LB_SCHEDULER_SCH:
+		scheduler = "IP_HASH"
+	default:
+		scheduler = "WRR"
+	}
+
+	sessionTimeout := 0
+	if lblis.StickySession == api.LB_BOOL_ON {
+		sessionTimeout = lblis.StickySessionCookieTimeout
+	}
+
+	rule := &cloudprovider.SLoadbalancerListenerRule{
+		Name:   lbr.Name,
+		Domain: lbr.Domain,
+		Path:   lbr.Path,
+
+		Scheduler: scheduler,
+
+		HealthCheck:   lblis.HealthCheck,
+		HealthCheckType:  lblis.HealthCheckType,
+		HealthCheckTimeout: lblis.HealthCheckTimeout,
+		HealthCheckDomain: lblis.HealthCheckDomain,
+		HealthCheckHttpCode:  lblis.HealthCheckHttpCode,
+		HealthCheckURI:  lblis.HealthCheckURI,
+		HealthCheckInterval: lblis.HealthCheckInterval,
+
+		HealthCheckRise: lblis.HealthCheckRise,
+		HealthCheckFail: lblis.HealthCheckFall,
+
+		StickySessionCookieTimeout: sessionTimeout,
+	}
+
+	return rule
+}
+
 func (self *SQcloudRegionDriver) RequestCreateLoadbalancerListenerRule(ctx context.Context, userCred mcclient.TokenCredential, lbr *models.SLoadbalancerListenerRule, task taskman.ITask) error {
 	taskman.LocalTaskRun(task, func() (jsonutils.JSONObject, error) {
 		listener := lbr.GetLoadbalancerListener()
@@ -615,11 +657,7 @@ func (self *SQcloudRegionDriver) RequestCreateLoadbalancerListenerRule(ctx conte
 		if err != nil {
 			return nil, errors.Wrap(err, "qcloudRegionDriver.RequestCreateLoadbalancerListenerRule.GetILoadBalancerListenerById")
 		}
-		rule := &cloudprovider.SLoadbalancerListenerRule{
-			Name:   lbr.Name,
-			Domain: lbr.Domain,
-			Path:   lbr.Path,
-		}
+		rule := self.GetLoadbalancerListenerRuleInputParams(listener, lbr)
 		iListenerRule, err := iListener.CreateILoadBalancerListenerRule(rule)
 		if err != nil {
 			return nil, errors.Wrap(err, "qcloudRegionDriver.RequestCreateLoadbalancerListenerRule.CreateILoadBalancerListenerRule")
