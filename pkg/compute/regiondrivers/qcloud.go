@@ -869,14 +869,31 @@ func CheckQcloudBackendPortUnique(backendGroupId string, backendServerId string,
 	}
 
 	// 检查 当前服务器组没有backend with port记录，但是其他backendgroup存在backend with port记录的情况
-	err = checkQcloudBackendGroupUsable(backendGroupId, api.LB_LISTENER_TYPE_TCP, backendServerId, port)
+	q3 := models.LoadbalancerBackendGroupManager.Query().IsFalse("pending_deleted")
+	subLblis := models.LoadbalancerListenerManager.Query().SubQuery()
+	q3 = q3.Join(subLblis, sqlchemy.Equals(subLblis.Field("backend_group_id"), q3.Field("id")))
+	count, err = q3.Filter(sqlchemy.Equals(subLblis.Field("listener_type"), api.LB_LISTENER_TYPE_TCP)).CountWithError()
 	if err != nil {
 		return err
 	}
 
-	err = checkQcloudBackendGroupUsable(backendGroupId, api.LB_LISTENER_TYPE_UDP, backendServerId, port)
-	if  err != nil {
+	if count > 0 {
+		err = checkQcloudBackendGroupUsable(backendGroupId, api.LB_LISTENER_TYPE_TCP, backendServerId, port)
+		if err != nil {
+			return err
+		}
+	}
+
+	count, err = q3.Filter(sqlchemy.Equals(subLblis.Field("listener_type"), api.LB_LISTENER_TYPE_UDP)).CountWithError()
+	if err != nil {
 		return err
+	}
+
+	if count > 0 {
+		err = checkQcloudBackendGroupUsable(backendGroupId, api.LB_LISTENER_TYPE_UDP, backendServerId, port)
+		if  err != nil {
+			return err
+		}
 	}
 
 	return nil
