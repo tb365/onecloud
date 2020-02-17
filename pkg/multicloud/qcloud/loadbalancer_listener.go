@@ -533,16 +533,15 @@ func (self *SRegion) CreateLoadbalancerListenerRule(lbid string, listenerId stri
 	params["Rules.0.SessionExpireTime"] = strconv.Itoa(sessionExpireTime)
 
 	// health check
-	params["HealthCheck.HealthSwitch"] = strconv.Itoa(hc.HealthSwitch)
-	params["HealthCheck.TimeOut"] = strconv.Itoa(hc.TimeOut)
-	params["HealthCheck.IntervalTime"] = strconv.Itoa(hc.IntervalTime)
-	params["HealthCheck.HealthNum"] = strconv.Itoa(hc.HealthNum)
-	params["HealthCheck.UnHealthNum"] = strconv.Itoa(hc.UnHealthNum)
+	params["Rules.0.HealthCheck.HealthSwitch"] = strconv.Itoa(hc.HealthSwitch)
+	params["Rules.0.HealthCheck.IntervalTime"] = strconv.Itoa(hc.IntervalTime)
+	params["Rules.0.HealthCheck.HealthNum"] = strconv.Itoa(hc.HealthNum)
+	params["Rules.0.HealthCheck.UnHealthNum"] = strconv.Itoa(hc.UnHealthNum)
 	if hc.HTTPCode > 0 {
-		params["HealthCheck.HttpCode"] = strconv.Itoa(hc.HTTPCode)
-		params["HealthCheck.HttpCheckPath"] = hc.HTTPCheckPath
-		params["HealthCheck.HttpCheckDomain"] = hc.HTTPCheckDomain
-		params["HealthCheck.HttpCheckMethod"] = hc.HTTPCheckMethod
+		params["Rules.0.HealthCheck.HttpCode"] = strconv.Itoa(hc.HTTPCode)
+		params["Rules.0.HealthCheck.HttpCheckPath"] = hc.HTTPCheckPath
+		params["Rules.0.HealthCheck.HttpCheckDomain"] = hc.HTTPCheckDomain
+		params["Rules.0.HealthCheck.HttpCheckMethod"] = hc.HTTPCheckMethod
 	}
 
 	resp, err := self.clbRequest("CreateRule", params)
