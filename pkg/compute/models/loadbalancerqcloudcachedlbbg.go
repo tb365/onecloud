@@ -139,7 +139,9 @@ func (lbbg *SQcloudCachedLbbg) syncRemoveCloudLoadbalancerBackendgroup(ctx conte
 		err = lbbg.SetStatus(userCred, api.LB_STATUS_UNKNOWN, "sync to delete")
 	} else {
 		lbbg.SetModelManager(QcloudCachedLbbgManager, lbbg)
-		err := db.DeleteModel(ctx, userCred, lbbg)
+		_, err :=db.Update(lbbg, func() error {
+			return lbbg.MarkDelete()
+		})
 		if err != nil {
 			return err
 		}
