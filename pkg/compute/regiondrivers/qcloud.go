@@ -847,8 +847,8 @@ func (self *SQcloudRegionDriver) ValidateUpdateLoadbalancerListenerRuleData(ctx 
 }
 
 // validate backend port unique
-func CheckQcloudBackendPortUnique(backendGroupId string, backendId string, port int) error {
-	q1 := models.LoadbalancerBackendManager.Query("backend_group_id").Equals("port", port).Equals("backend_id", backendId).IsFalse("pending_deleted").Distinct()
+func CheckQcloudBackendPortUnique(backendGroupId string, backendServerId string, port int) error {
+	q1 := models.LoadbalancerBackendManager.Query("backend_group_id").Equals("port", port).Equals("backend_id", backendServerId).IsFalse("pending_deleted").Distinct()
 	count, err := q1.CountWithError()
 	if err != nil {
 		return err
@@ -865,16 +865,16 @@ func CheckQcloudBackendPortUnique(backendGroupId string, backendId string, port 
 	}
 
 	if count > 0 {
-		return httperrors.NewConflictError("backend %s with port %d already in used in backendgroup", backendId, port)
+		return httperrors.NewConflictError("server %s with port %d already in used", backendServerId, port)
 	}
 
 	// 检查 当前服务器组没有backend with port记录，但是其他backendgroup存在backend with port记录的情况
-	err = checkQcloudBackendGroupUsable(backendGroupId, api.LB_LISTENER_TYPE_TCP, backendId, port)
+	err = checkQcloudBackendGroupUsable(backendGroupId, api.LB_LISTENER_TYPE_TCP, backendServerId, port)
 	if err != nil {
 		return err
 	}
 
-	err = checkQcloudBackendGroupUsable(backendGroupId, api.LB_LISTENER_TYPE_UDP, backendId, port)
+	err = checkQcloudBackendGroupUsable(backendGroupId, api.LB_LISTENER_TYPE_UDP, backendServerId, port)
 	if  err != nil {
 		return err
 	}
@@ -882,7 +882,7 @@ func CheckQcloudBackendPortUnique(backendGroupId string, backendId string, port 
 	return nil
 }
 
-func checkQcloudBackendGroupUsable(fromBackendGroup string, listenerType string, backendId string, port int) error {
+func checkQcloudBackendGroupUsable(fromBackendGroup string, listenerType string, backendServerId string, port int) error {
 	q := models.QcloudCachedLbManager.Query()
 	subLbb := models.LoadbalancerBackendManager.Query().SubQuery()
 	subCachedLbbg := models.QcloudCachedLbbgManager.Query().SubQuery()
@@ -899,7 +899,7 @@ func checkQcloudBackendGroupUsable(fromBackendGroup string, listenerType string,
 	if len(fromBackendGroup) > 0 {
 		q = q.Filter(sqlchemy.NotEquals(subLbbg.Field("id"), fromBackendGroup))
 	}
-	q = q.Filter(sqlchemy.Equals(subLbb.Field("id"), backendId))
+	q = q.Filter(sqlchemy.Equals(subLbb.Field("backend_id"), backendServerId))
 	q = q.Filter(sqlchemy.Equals(subLbb.Field("port"), port))
 	q = q.Filter(sqlchemy.IsFalse(subLbb.Field("pending_deleted")))
 	count, err := q.CountWithError()
@@ -908,7 +908,7 @@ func checkQcloudBackendGroupUsable(fromBackendGroup string, listenerType string,
 	}
 
 	if count > 0 {
-		return httperrors.NewConflictError("backend %s with port %d aready used by other %s listener", backendId, port, listenerType)
+		return httperrors.NewConflictError("server %s with port %d aready used by other %s listener", backendServerId, port, listenerType)
 	}
 
 	return nil
