@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"yunion.io/x/sqlchemy"
 
 	"yunion.io/x/jsonutils"
 	"yunion.io/x/log"
@@ -137,33 +138,29 @@ func (self *SQcloudRegionDriver) ValidateCreateLoadbalancerListenerData(ctx cont
 				return nil, httperrors.NewMissingParameterError("backend_group_id")
 			}
 
-			cachedLbbgs, err := lbbg.GetQcloudCachedlbbg()
+			// listener check
+			q := models.LoadbalancerListenerManager.Query()
+			q = q.Equals("loadbalancer_id", lb.GetId())
+			q = q.Equals("listener_type", listenerType)
+			q = q.Equals("backend_group_id", lbbg.GetId())
+			q = q.IsFalse("pending_deleted")
+			count, err := q.CountWithError()
 			if err != nil {
-				return nil, err
+				return nil, httperrors.NewGeneralError(err)
 			}
 
-			if len(cachedLbbgs) > 0 {
-				for i := range cachedLbbgs {
-					if cachedLbbgs[i].AssociatedType == api.LB_ASSOCIATE_TYPE_LISTENER {
-						_lblis, err := db.FetchById(models.LoadbalancerListenerManager, cachedLbbgs[i].AssociatedId)
-						if err != nil {
-							return nil, err
-						}
-
-						if _lblis.(*models.SLoadbalancerListener).ListenerType == listenerType {
-							return nil, httperrors.NewConflictError("loadbalancer aready associated with fourth layer listener %s", cachedLbbgs[i].AssociatedId)
-						}
-					}
-				}
+			if count > 0 {
+				return nil, httperrors.NewConflictError("loadbalancer backendgroup aready associate with other %s listener", listenerType)
 			}
 
+			// lbbg backend check
 			lbbs, err := lbbg.GetBackends()
 			if err != nil {
-				return nil, err
+				return nil, httperrors.NewGeneralError(err)
 			}
 
 			for i := range lbbs {
-				err = checkQcloudBackendGroupUsable([]string{lbbg.GetId()}, listenerType, lbbs[i].BackendId, lbbs[i].Port)
+				err = checkQcloudBackendGroupUsable("", listenerType, lbbs[i].BackendId, lbbs[i].Port)
 				if err != nil {
 					return nil, err
 				}
@@ -742,7 +739,7 @@ func (self *SQcloudRegionDriver) ValidateUpdateLoadbalancerListenerData(ctx cont
 				}
 
 				for i := range lbbs {
-					err = checkQcloudBackendGroupUsable([]string{lbbg.GetId(), lblis.BackendGroupId}, lblis.ListenerType, lbbs[i].BackendId, lbbs[i].Port)
+					err = checkQcloudBackendGroupUsable(lblis.BackendGroupId, lblis.ListenerType, lbbs[i].BackendId, lbbs[i].Port)
 					if err != nil {
 						return nil, err
 					}
@@ -871,48 +868,47 @@ func CheckQcloudBackendPortUnique(backendGroupId string, backendId string, port 
 		return httperrors.NewConflictError("backend %s with port %d already in used in backendgroup", backendId, port)
 	}
 
-	q3 := models.LoadbalancerListenerManager.Query().Equals("backend_group_id", backendGroupId).In("listener_type", []string{api.LB_LISTENER_TYPE_TCP, api.LB_LISTENER_TYPE_UDP}).IsFalse("pending_deleted")
-	count, err = q3.CountWithError()
+	// 检查 当前服务器组没有backend with port记录，但是其他backendgroup存在backend with port记录的情况
+	err = checkQcloudBackendGroupUsable(backendGroupId, api.LB_LISTENER_TYPE_TCP, backendId, port)
 	if err != nil {
 		return err
 	}
 
-	if count == 0 {
-		return nil
-	}
-
-	q4 := models.LoadbalancerListenerManager.Query().In("backend_group_id", q1.SubQuery()).In("listener_type", []string{api.LB_LISTENER_TYPE_TCP, api.LB_LISTENER_TYPE_UDP}).IsFalse("pending_deleted")
-	count, err = q4.CountWithError()
-	if err != nil {
+	err = checkQcloudBackendGroupUsable(backendGroupId, api.LB_LISTENER_TYPE_UDP, backendId, port)
+	if  err != nil {
 		return err
-	}
-
-	if count > 0 {
-		return httperrors.NewConflictError("backend %s with port %d already in used in other backendgroup", backendId, port)
 	}
 
 	return nil
 }
 
-func checkQcloudBackendGroupUsable(backendGroupIds []string,listenerType string, backendId string, port int) error {
-	q1 := models.LoadbalancerBackendManager.Query("backend_group_id").Equals("port", port).Equals("backend_id", backendId).IsFalse("pending_deleted").Distinct()
-	count, err := q1.CountWithError()
-	if err != nil {
-		return err
-	}
+func checkQcloudBackendGroupUsable(fromBackendGroup string, listenerType string, backendId string, port int) error {
+	q := models.QcloudCachedLbManager.Query()
+	subLbb := models.LoadbalancerBackendManager.Query().SubQuery()
+	subCachedLbbg := models.QcloudCachedLbbgManager.Query().SubQuery()
+	subLbbg := models.LoadbalancerBackendGroupManager.Query().SubQuery()
+	subLblis := models.LoadbalancerListenerManager.Query().SubQuery()
+	q = q.Join(subLbb, sqlchemy.Equals(q.Field("backend_id"), subLbb.Field("id")))
+	q = q.Join(subCachedLbbg, sqlchemy.Equals(q.Field("cached_backend_group_id"), subCachedLbbg.Field("id")))
+	q = q.Join(subLbbg, sqlchemy.Equals(subCachedLbbg.Field("backend_group_id"), subLbbg.Field("id")))
+	q = q.Join(subLblis, sqlchemy.Equals(subCachedLbbg.Field("associated_id"), subLblis.Field("id")))
 
-	if count == 0 {
-		return nil
+	q = q.Filter(sqlchemy.Equals(subCachedLbbg.Field("associated_type"), api.LB_ASSOCIATE_TYPE_LISTENER))
+	q = q.Filter(sqlchemy.Equals(subLblis.Field("listener_type"), listenerType))
+	q = q.Filter(sqlchemy.IsFalse(subLblis.Field("pending_deleted")))
+	if len(fromBackendGroup) > 0 {
+		q = q.Filter(sqlchemy.NotEquals(subLbbg.Field("id"), fromBackendGroup))
 	}
-
-	q4 := models.LoadbalancerListenerManager.Query().NotIn("backend_group_id", backendGroupIds).In("backend_group_id", q1.SubQuery()).Equals("listener_type", listenerType).IsFalse("pending_deleted")
-	count, err = q4.CountWithError()
+	q = q.Filter(sqlchemy.Equals(subLbb.Field("id"), backendId))
+	q = q.Filter(sqlchemy.Equals(subLbb.Field("port"), port))
+	q = q.Filter(sqlchemy.IsFalse(subLbb.Field("pending_deleted")))
+	count, err := q.CountWithError()
 	if err != nil {
-		return err
+		return httperrors.NewGeneralError(err)
 	}
 
 	if count > 0 {
-		return httperrors.NewConflictError("backend %s with port %d already in used in other backendgroup", backendId, port)
+		return httperrors.NewConflictError("backend %s with port %d aready used by other %s listener", backendId, port, listenerType)
 	}
 
 	return nil
