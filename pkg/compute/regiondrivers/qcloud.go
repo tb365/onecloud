@@ -872,6 +872,7 @@ func CheckQcloudBackendPortUnique(backendGroupId string, backendServerId string,
 	q3 := models.LoadbalancerBackendGroupManager.Query().IsFalse("pending_deleted")
 	subLblis := models.LoadbalancerListenerManager.Query().SubQuery()
 	q3 = q3.Join(subLblis, sqlchemy.Equals(subLblis.Field("backend_group_id"), q3.Field("id")))
+	q3 = q3.Equals("id", backendGroupId)
 	count, err = q3.Filter(sqlchemy.Equals(subLblis.Field("listener_type"), api.LB_LISTENER_TYPE_TCP)).CountWithError()
 	if err != nil {
 		return err
