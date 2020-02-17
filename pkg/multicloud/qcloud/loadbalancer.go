@@ -132,7 +132,7 @@ func (self *SLoadbalancer) GetILoadBalancerBackendGroupById(groupId string) (clo
 func onecloudHealthCodeToQcloud(codes string) int {
 	qcode := 0
 	for i, code := range HTTP_CODES {
-		if strings.Contains(code, codes) {
+		if strings.Contains(codes, code) {
 			// 按位或然后再赋值qcode
 			qcode |= 1 << uint(i)
 		}
