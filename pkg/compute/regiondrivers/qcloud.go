@@ -858,7 +858,7 @@ func CheckQcloudBackendPortUnique(backendGroupId string, backendServerId string,
 		return nil
 	}
 
-	q2 := models.LoadbalancerBackendManager.Query().Equals("backend_group_id", backendGroupId).Equals("port", port).Equals("backend_id", backendId).IsFalse("pending_deleted").Distinct()
+	q2 := models.LoadbalancerBackendManager.Query().Equals("backend_group_id", backendGroupId).Equals("port", port).Equals("backend_id", backendServerId).IsFalse("pending_deleted").Distinct()
 	count, err = q2.CountWithError()
 	if err != nil {
 		return err
