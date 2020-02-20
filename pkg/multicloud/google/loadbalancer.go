@@ -3,6 +3,9 @@ package google
 
 /*
 loadbalancer 相关的接口：
+负载均衡列表：
+https://stackoverflow.com/questions/50814300/gcp-api-for-getting-list-of-load-balancer
+
 
 转发规则【转发策略】：
 【1】内网HTTP/HTTPS负载均衡 https://cloud.google.com/compute/docs/reference/rest/v1/urlMaps/insert?hl=zh_CN
