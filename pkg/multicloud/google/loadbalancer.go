@@ -1,7 +1,19 @@
 package google
 
-
 /*
+// https://cloud.google.com/load-balancing/docs/choosing-load-balancer?hl=zh_CN
+Cloud 负载平衡器摘要
+下表提供了有关各负载平衡器的一些具体信息。
+
+负载平衡器	流量类型	保留客户端 IP 地址	全球性或区域性	负载平衡方案	负载平衡器目标端口	代理或直通
+HTTP(S)	HTTP 或 HTTPS	否	全球	EXTERNAL	在端口 80 或 8080 上处理 HTTP 流量；在端口 443 上处理 HTTPS 流量	代理
+SSL 代理	具有 SSL 分流的 TCP	否	全球	EXTERNAL	25、43、110、143、195、443、465、587、700、993、995、1883、5222	代理
+TCP 代理	无 SSL 分流的 TCP	否	全球	EXTERNAL	25、43、110、143、195、443、465、587、700、993、995、1883、5222	代理
+网络 TCP/UDP	TCP 或 UDP	是	区域	EXTERNAL	不限	直通
+内部 TCP/UDP	TCP 或 UDP	是	区域	INTERNAL	不限	直通
+内部 HTTP(S)	HTTP 或 HTTPS	否	区域	INTERNAL_MANAGED	在端口 80 或 8080 上处理 HTTP 流量；在端口 443 上处理 HTTPS 流量	代理
+
+
 loadbalancer 相关的接口：
 负载均衡列表：
 https://stackoverflow.com/questions/50814300/gcp-api-for-getting-list-of-load-balancer
