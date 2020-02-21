@@ -14,6 +14,9 @@ TCP 代理	无 SSL 分流的 TCP	否	全球	EXTERNAL	25、43、110、143、195�
 内部 HTTP(S)	HTTP 或 HTTPS	否	区域	INTERNAL_MANAGED	在端口 80 或 8080 上处理 HTTP 流量；在端口 443 上处理 HTTPS 流量	代理
 
 
+// loadbalancer 特性
+https://cloud.google.com/load-balancing/docs/features?hl=zh_CN
+
 loadbalancer 相关的接口：
 负载均衡列表：
 https://stackoverflow.com/questions/50814300/gcp-api-for-getting-list-of-load-balancer
