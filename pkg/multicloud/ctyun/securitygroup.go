@@ -28,7 +28,6 @@ import (
 
 type SSecurityGroup struct {
 	region *SRegion
-	vpc    *SVpc
 
 	ResSecurityGroupID string `json:"resSecurityGroupId"`
 	Name               string `json:"name"`
@@ -430,12 +429,6 @@ func (self *SRegion) CreateSecurityGroup(vpcId, name string) (*SSecurityGroup, e
 		return nil, errors.Wrap(err, "SRegion.CreateSecurityGroup.GetISecurityGroupById")
 	}
 
-	vpc, err := self.GetVpc(vpcId)
-	if err != nil {
-		return nil, errors.Wrap(err, "SRegion.CreateSecurityGroup.GetVpc")
-	}
-
-	secgroup.vpc = vpc
 	secgroup.region = self
 	return secgroup, nil
 }
