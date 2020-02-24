@@ -413,7 +413,7 @@ func (self *SRegion) CreateSecurityGroup(vpcId, name string) (*SSecurityGroup, e
 		"name":     jsonutils.NewString(name),
 	}
 
-	if len(vpcId) > 0 && vpcId != "classic" {
+	if len(vpcId) > 0 && (vpcId != "classic" && vpcId != "normal") {
 		params["vpcId"] = jsonutils.NewString(vpcId)
 	}
 
