@@ -128,9 +128,9 @@ func (self *SSecurityGroup) GetId() string {
 }
 
 func (self *SSecurityGroup) GetVpcId() string {
-	// 无vpc关联的安全组统一返回normal
+	// 无vpc关联的安全组统一返回classic
 	if len(self.VpcID) == 0 {
-		return "normal"
+		return "classic"
 	}
 
 	return self.VpcID

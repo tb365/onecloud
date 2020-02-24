@@ -353,7 +353,7 @@ func (self *SSecurityGroup) GetSecurityRule(remoteRule SSecurityGroupRule, withR
 
 func (self *SSecurityGroup) GetVpcId() string {
 	if len(self.VpcID) == 0 {
-		return "normal"
+		return "classic"
 	}
 
 	return self.VpcID
@@ -410,8 +410,11 @@ func (self *SRegion) GetSecurityGroups(vpcId string) ([]SSecurityGroup, error) {
 func (self *SRegion) CreateSecurityGroup(vpcId, name string) (*SSecurityGroup, error) {
 	params := map[string]jsonutils.JSONObject{
 		"regionId": jsonutils.NewString(self.GetId()),
-		"vpcId":    jsonutils.NewString(vpcId),
 		"name":     jsonutils.NewString(name),
+	}
+
+	if len(vpcId) > 0 && vpcId != "classic" {
+		params["vpcId"] = jsonutils.NewString(vpcId)
 	}
 
 	resp, err := self.client.DoPost("/apiproxy/v3/createSecurityGroup", params)
