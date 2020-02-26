@@ -209,7 +209,6 @@ func (self *SRegion) GetVpc(vpcId string) (*SVpc, error) {
 		return nil, errors.Wrap(err, "SRegion.GetVpc.Unmarshal")
 	}
 
-	vpc.ResVpcID, _ = resp.GetString("id")
 	vpc.region = self
 	return vpc, nil
 }
