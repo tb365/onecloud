@@ -15,10 +15,13 @@
 package qcloud
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
 	"time"
+
+	"yunion.io/x/onecloud/pkg/cloudcommon/db/lockman"
 
 	"yunion.io/x/jsonutils"
 
@@ -597,6 +600,10 @@ func (self *SRegion) deleteClassicLoadbalancerListener(lbid string, listenerId s
 
 //  返回requestID
 func (self *SRegion) DeleteLoadbalancerListener(t LB_TYPE, lbid string, listenerId string) (string, error) {
+	ctx := context.Background()
+	lockman.LockRawObject(ctx, "qcloud.SRegion", "DeleteLoadbalancerListener")
+	defer lockman.ReleaseRawObject(ctx, "qcloud.SRegion", "DeleteLoadbalancerListener")
+
 	if len(lbid) == 0 {
 		return "", fmt.Errorf("loadbalancer id should not be empty")
 	}
