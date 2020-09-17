@@ -482,9 +482,9 @@ func (self *SHuaweiClient) GetCapabilities() []string {
 	// huawei objectstore is shared across projects(subscriptions)
 	// to avoid multiple project access the same bucket
 	// only main project is allow to access objectstore bucket
-	if self.isMainProject {
-		caps = append(caps, cloudprovider.CLOUD_CAPABILITY_OBJECTSTORE)
-	}
+	//if self.isMainProject {
+	//	caps = append(caps, cloudprovider.CLOUD_CAPABILITY_OBJECTSTORE)
+	//}
 	return caps
 }
 
