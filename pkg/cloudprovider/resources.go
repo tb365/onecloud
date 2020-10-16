@@ -881,6 +881,7 @@ type ICloudElasticcache interface {
 	GetMaintainEndTime() string
 
 	GetAuthMode() string
+	GetSecurityGroupIds() ([]string, error)
 
 	GetICloudElasticcacheAccounts() ([]ICloudElasticcacheAccount, error)
 	GetICloudElasticcacheAcls() ([]ICloudElasticcacheAcl, error)
@@ -901,12 +902,13 @@ type ICloudElasticcache interface {
 	CreateAccount(account SCloudElasticCacheAccountInput) (ICloudElasticcacheAccount, error)
 	CreateAcl(aclName, securityIps string) (ICloudElasticcacheAcl, error)
 	CreateBackup() (ICloudElasticcacheBackup, error)
-	FlushInstance() error
+	FlushInstance(input SCloudElasticCacheFlushInstanceInput) error
 	UpdateAuthMode(noPasswordAccess bool) error
 	UpdateInstanceParameters(config jsonutils.JSONObject) error
 	UpdateBackupPolicy(config SCloudElasticCacheBackupPolicyUpdateInput) error
 
 	SetMetadata(tags map[string]string, replace bool) error
+	UpdateSecurityGroups(secgroupIds []string) error
 }
 
 type ICloudElasticcacheAccount interface {
