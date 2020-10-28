@@ -1566,7 +1566,7 @@ func (self *SQcloudRegionDriver) RequestCreateElasticcache(ctx context.Context, 
 			return nil, errors.Wrap(err, "qcloudRegionDriver.CreateElasticcache.CreateIElasticcaches")
 		}
 
-		err = cloudprovider.WaitStatusWithDelay(iec, api.ELASTIC_CACHE_STATUS_RUNNING, 30*time.Second, 15*time.Second, 600*time.Second)
+		err = cloudprovider.WaitStatusWithDelay(iec, api.ELASTIC_CACHE_STATUS_RUNNING, 30*time.Second, 15*time.Second, 900*time.Second)
 		if err != nil {
 			return nil, errors.Wrap(err, "qcloudRegionDriver.CreateElasticcache.WaitStatusWithDelay")
 		}
