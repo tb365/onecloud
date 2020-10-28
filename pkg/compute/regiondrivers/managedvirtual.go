@@ -2236,6 +2236,7 @@ func (self *SManagedVirtualizationRegionDriver) ValidateCreateElasticcacheBackup
 		return nil, httperrors.NewInputParameterError("can not make backup in status %s", ec.Status)
 	}
 
+	data.Set("backup_mode", jsonutils.NewString(api.BACKUP_MODE_MANUAL))
 	return data, nil
 }
 
