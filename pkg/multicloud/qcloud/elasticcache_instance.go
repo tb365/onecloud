@@ -68,8 +68,8 @@ type InstanceTag struct {
 }
 
 type MaintenanceTime struct {
-	StartTime time.Time `json:"start_time"`
-	EndTime   time.Time `json:"end_time"`
+	StartTime string `json:"start_time"`
+	EndTime   string `json:"end_time"`
 }
 
 var zoneMaps = map[int]string{
@@ -438,7 +438,7 @@ func (self *SElasticcache) GetMaintainStartTime() string {
 		}
 	}
 
-	return self.MaintenanceTime.StartTime.String()
+	return self.MaintenanceTime.StartTime
 }
 
 func (self *SElasticcache) GetMaintainEndTime() string {
@@ -449,7 +449,7 @@ func (self *SElasticcache) GetMaintainEndTime() string {
 		}
 	}
 
-	return self.MaintenanceTime.EndTime.String()
+	return self.MaintenanceTime.EndTime
 }
 
 func (self *SElasticcache) GetAuthMode() string {
