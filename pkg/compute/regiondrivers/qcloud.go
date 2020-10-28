@@ -1743,7 +1743,7 @@ func (self *SQcloudRegionDriver) RequestElasticcacheAccountResetPassword(ctx con
 
 	iea, err := iec.GetICloudElasticcacheAccount(ea.GetExternalId())
 	if err != nil {
-		return errors.Wrap(err, "qcloudRegionDriver.RequestElasticcacheAccountResetPassword.GetICloudElasticcacheBackup")
+		return errors.Wrap(err, "qcloudRegionDriver.RequestElasticcacheAccountResetPassword.GetICloudElasticcacheAccount")
 	}
 
 	data := task.GetParams()
@@ -1762,6 +1762,8 @@ func (self *SQcloudRegionDriver) RequestElasticcacheAccountResetPassword(ctx con
 		if input.Password != nil {
 			resetParams.NewPassword = *input.Password
 		}
+
+		err = iea.ResetPassword(resetParams)
 	} else {
 		err = iea.UpdateAccount(input)
 	}
@@ -1792,4 +1794,52 @@ func (self *SQcloudRegionDriver) RequestElasticcacheAccountResetPassword(ctx con
 	}
 
 	return ea.SyncWithCloudElasticcacheAccount(ctx, userCred, iea)
+}
+
+func (self *SQcloudRegionDriver) RequestUpdateElasticcacheAuthMode(ctx context.Context, userCred mcclient.TokenCredential, ec *models.SElasticcache, task taskman.ITask) error {
+	authMode, err := task.GetParams().GetString("auth_mode")
+	if err != nil {
+		return errors.Wrap(fmt.Errorf("missing parameter auth_mode"), "SQcloudRegionDriver.RequestUpdateElasticcacheAuthMode")
+	}
+
+	iregion, err := ec.GetIRegion()
+	if err != nil {
+		return errors.Wrap(err, "SQcloudRegionDriver.RequestUpdateElasticcacheAuthMode.GetIRegion")
+	}
+
+	iec, err := iregion.GetIElasticcacheById(ec.ExternalId)
+	if err != nil {
+		return errors.Wrap(err, "SQcloudRegionDriver.RequestUpdateElasticcacheAuthMode.GetIElasticcacheById")
+	}
+
+	noPassword := true
+	if authMode == "on" {
+		noPassword = false
+	}
+
+	if iec.GetEngine() == "redis" && iec.GetEngineVersion() == "2.8" {
+		iea, err := iec.GetICloudElasticcacheAccount("root")
+		if err != nil {
+			return errors.Wrap(err, "qcloudRegionDriver.RequestUpdateElasticcacheAuthMode.GetICloudElasticcacheAccount")
+		}
+
+		resetParams := cloudprovider.SCloudElasticCacheAccountResetPasswordInput{}
+		resetParams.NoPasswordAccess = &noPassword
+		err = iea.ResetPassword(resetParams)
+	} else {
+		err = iec.UpdateAuthMode(noPassword)
+	}
+	if err != nil {
+		return errors.Wrap(err, "SQcloudRegionDriver.RequestUpdateElasticcacheAuthMode.UpdateAuthMode")
+	}
+
+	_, err = db.Update(ec, func() error {
+		ec.AuthMode = authMode
+		return nil
+	})
+	if err != nil {
+		return errors.Wrap(err, "SQcloudRegionDriver.RequestUpdateElasticcacheAuthMode.UpdatedbAuthMode")
+	}
+
+	return cloudprovider.WaitStatusWithDelay(iec, api.ELASTIC_CACHE_STATUS_RUNNING, 10*time.Second, 10*time.Second, 600*time.Second)
 }

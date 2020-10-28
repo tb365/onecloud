@@ -1880,7 +1880,7 @@ func (self *SManagedVirtualizationRegionDriver) RequestSyncElasticcache(ctx cont
 		log.Debugf("managedVirtualizationRegionDriver.RequestSyncElasticcache.SyncElasticcacheBackups %s", result.Result())
 	}
 
-	return ec.SetStatus(userCred, api.ELASTIC_CACHE_STATUS_RUNNING, "")
+	return nil
 }
 
 func (self *SManagedVirtualizationRegionDriver) RequestDeleteElasticcache(ctx context.Context, userCred mcclient.TokenCredential, ec *models.SElasticcache, task taskman.ITask) error {
