@@ -1988,7 +1988,7 @@ func (self *SManagedVirtualizationRegionDriver) RequestUpdateElasticcacheAuthMod
 		noPassword = false
 	}
 
-	err = iec.UpdateAuthMode(noPassword)
+	err = iec.UpdateAuthMode(noPassword, "")
 	if err != nil {
 		return errors.Wrap(err, "managedVirtualizationRegionDriver.RequestUpdateElasticcacheAuthMode.UpdateAuthMode")
 	}
