@@ -1661,6 +1661,11 @@ func (self *SQcloudRegionDriver) ValidateCreateElasticcacheAccountData(ctx conte
 		}
 	}
 
+	ec := elasticCacheV.Model.(*models.SElasticcache)
+	if ec.Engine == "redis" && ec.EngineVersion == "2.8" {
+		return nil, httperrors.NewNotSupportedError("redis version 2.8 not support create account")
+	}
+
 	passwd, _ := data.GetString("password")
 	if !seclib2.MeetComplxity(passwd) {
 		return nil, httperrors.NewWeakPasswordError()
