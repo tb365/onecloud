@@ -1751,7 +1751,15 @@ func (self *SQcloudRegionDriver) RequestElasticcacheAccountResetPassword(ctx con
 		return errors.Wrap(err, "qcloudRegionDriver.RequestElasticcacheAccountResetPassword.GetUpdateQcloudElasticcacheAccountParams")
 	}
 
-	err = iea.UpdateAccount(input)
+	if iec.GetEngine() == "redis" && iec.GetEngineVersion() == "2.8" {
+		resetParams := cloudprovider.SCloudElasticCacheAccountResetPasswordInput{}
+		resetParams.NoPasswordAccess = input.NoPasswordAccess
+		if input.Password != nil {
+			resetParams.NewPassword = *input.Password
+		}
+	} else {
+		err = iea.UpdateAccount(input)
+	}
 	if err != nil {
 		return errors.Wrap(err, "qcloudRegionDriver.RequestElasticcacheAccountResetPassword.UpdateAccount")
 	}
