@@ -1774,6 +1774,16 @@ func (self *SQcloudRegionDriver) RequestElasticcacheAccountResetPassword(ctx con
 		if err != nil {
 			return errors.Wrap(err, "qcloudRegionDriver.RequestElasticcacheAccountResetPassword.SavePassword")
 		}
+
+		if iea.GetName() == "root" {
+			_, err := db.UpdateWithLock(ctx, ec, func() error {
+				ec.AuthMode = api.LB_BOOL_ON
+				return nil
+			})
+			if err != nil {
+				return errors.Wrap(err, "qcloudRegionDriver.RequestElasticcacheAccountResetPassword.UpdateAuthMode")
+			}
+		}
 	}
 
 	err = cloudprovider.WaitStatusWithDelay(iea, api.ELASTIC_CACHE_ACCOUNT_STATUS_AVAILABLE, 10*time.Second, 5*time.Second, 60*time.Second)
