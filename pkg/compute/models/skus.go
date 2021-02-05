@@ -89,8 +89,8 @@ type SServerSku struct {
 	PostpaidStatus string `width:"32" charset:"utf8" nullable:"true" list:"user" create:"admin_optional" default:"available"` // 按需付费资源状态  available|soldout
 
 	CpuArch      string `width:"16" charset:"ascii" nullable:"true" list:"user" create:"admin_optional" update:"admin"` // CPU 架构 x86|xarm
-	CpuCoreCount int `nullable:"false" list:"user" create:"admin_required"`
-	MemorySizeMB int `nullable:"false" list:"user" create:"admin_required"`
+	CpuCoreCount int    `nullable:"false" list:"user" create:"admin_required"`
+	MemorySizeMB int    `nullable:"false" list:"user" create:"admin_required"`
 
 	OsName string `width:"32" charset:"ascii" nullable:"true" list:"user" create:"admin_optional" update:"admin" default:"Any"` // Windows|Linux|Any
 
